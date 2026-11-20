@@ -3,12 +3,17 @@ package com.ucs553.library;
 import com.ucs553.library.config.AppConfig;
 import com.ucs553.library.config.ConfigException;
 import com.ucs553.library.config.LogSetup;
-import com.ucs553.library.dao.DataAccessException;
 import com.ucs553.library.dao.Database;
+import com.ucs553.library.dao.JdbcItemDao;
+import com.ucs553.library.dao.JdbcLoanDao;
+import com.ucs553.library.dao.JdbcMemberDao;
+import com.ucs553.library.exception.LibraryException;
+import com.ucs553.library.service.DemoDataSeeder;
 import javafx.application.Application;
 
 import java.io.IOException;
 import java.nio.file.Path;
+import java.time.Clock;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
@@ -48,7 +53,11 @@ public class Launcher {
             } else {
                 database.initSchema();
             }
-        } catch (DataAccessException e) {
+            if (options.seedDemo()) {
+                new DemoDataSeeder(new JdbcItemDao(database), new JdbcMemberDao(database),
+                        new JdbcLoanDao(database), Clock.systemDefaultZone()).seed();
+            }
+        } catch (LibraryException e) {
             log.log(Level.SEVERE, "Database setup failed", e);
             System.exit(1);
         }
