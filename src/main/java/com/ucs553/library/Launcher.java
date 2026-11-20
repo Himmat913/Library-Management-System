@@ -7,8 +7,10 @@ import com.ucs553.library.dao.Database;
 import com.ucs553.library.dao.JdbcItemDao;
 import com.ucs553.library.dao.JdbcLoanDao;
 import com.ucs553.library.dao.JdbcMemberDao;
+import com.ucs553.library.dao.JdbcStaffDao;
 import com.ucs553.library.exception.LibraryException;
 import com.ucs553.library.fine.PerDayFinePolicy;
+import com.ucs553.library.service.AuthService;
 import com.ucs553.library.service.DemoDataSeeder;
 import com.ucs553.library.service.LibraryService;
 import javafx.application.Application;
@@ -64,7 +66,9 @@ public class Launcher {
             if (options.seedDemo()) {
                 new DemoDataSeeder(items, members, loans, clock).seed();
             }
-            AppContext.init(config, new LibraryService(items, members, loans, new PerDayFinePolicy(), clock), database);
+            AuthService auth = new AuthService(new JdbcStaffDao(database));
+            auth.ensureDefaultAdmin();
+            AppContext.init(config, new LibraryService(items, members, loans, new PerDayFinePolicy(), clock), database, auth);
         } catch (LibraryException e) {
             log.log(Level.SEVERE, "Database setup failed", e);
             System.exit(1);

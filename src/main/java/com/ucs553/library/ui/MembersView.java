@@ -1,5 +1,6 @@
 package com.ucs553.library.ui;
 
+import com.ucs553.library.Session;
 import com.ucs553.library.dao.DataAccessException;
 import com.ucs553.library.exception.LibraryException;
 import com.ucs553.library.model.Item;
@@ -73,6 +74,8 @@ public class MembersView extends BorderPane implements Refreshable {
         add.getStyleClass().add("primary");
         edit.disableProperty().bind(list.getSelectionModel().selectedItemProperty().isNull());
         delete.disableProperty().bind(list.getSelectionModel().selectedItemProperty().isNull());
+        delete.setVisible(Session.isAdmin());
+        delete.setManaged(Session.isAdmin());
         add.setOnAction(e -> addMember());
         edit.setOnAction(e -> editSelected());
         delete.setOnAction(e -> deleteSelected());

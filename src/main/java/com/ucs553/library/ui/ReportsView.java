@@ -1,6 +1,7 @@
 package com.ucs553.library.ui;
 
 import com.ucs553.library.AppContext;
+import com.ucs553.library.Session;
 import com.ucs553.library.dao.DataAccessException;
 import com.ucs553.library.exception.LibraryException;
 import com.ucs553.library.io.DataExporter;
@@ -57,11 +58,13 @@ public class ReportsView extends BorderPane implements Refreshable {
                 e -> exportTo("Export loans", "loans.csv", "CSV files", "csv", exporter::exportLoans)));
         actions.getChildren().add(button("Overdue report (text)",
                 e -> exportTo("Save overdue report", "overdue-report.txt", "Text files", "txt", exporter::writeOverdueReport)));
-        actions.getChildren().add(heading("Import"));
-        actions.getChildren().add(button("Items from CSV", e -> importFrom("Import items", true)));
-        actions.getChildren().add(button("Members from CSV", e -> importFrom("Import members", false)));
-        actions.getChildren().add(heading("Backup"));
-        actions.getChildren().add(button("Back up database now", e -> backup()));
+        if (Session.isAdmin()) {
+            actions.getChildren().add(heading("Import"));
+            actions.getChildren().add(button("Items from CSV", e -> importFrom("Import items", true)));
+            actions.getChildren().add(button("Members from CSV", e -> importFrom("Import members", false)));
+            actions.getChildren().add(heading("Backup"));
+            actions.getChildren().add(button("Back up database now", e -> backup()));
+        }
         setLeft(actions);
 
         Label previewTitle = heading("Overdue report preview");

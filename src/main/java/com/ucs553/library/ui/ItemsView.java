@@ -1,5 +1,6 @@
 package com.ucs553.library.ui;
 
+import com.ucs553.library.Session;
 import com.ucs553.library.exception.LibraryException;
 import com.ucs553.library.model.Item;
 import com.ucs553.library.service.LibraryService;
@@ -51,6 +52,8 @@ public class ItemsView extends BorderPane implements Refreshable {
         add.getStyleClass().add("primary");
         edit.disableProperty().bind(table.getSelectionModel().selectedItemProperty().isNull());
         delete.disableProperty().bind(table.getSelectionModel().selectedItemProperty().isNull());
+        delete.setVisible(Session.isAdmin());
+        delete.setManaged(Session.isAdmin());
         add.setOnAction(e -> addItem());
         edit.setOnAction(e -> editSelected());
         delete.setOnAction(e -> deleteSelected());

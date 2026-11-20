@@ -51,6 +51,15 @@ public class Database implements ConnectionSource {
                 due_on TEXT NOT NULL,
                 returned_on TEXT
             )""",
+            """
+            CREATE TABLE IF NOT EXISTS staff (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                name TEXT NOT NULL,
+                email TEXT NOT NULL UNIQUE,
+                username TEXT NOT NULL UNIQUE COLLATE NOCASE,
+                password_hash TEXT NOT NULL,
+                role TEXT NOT NULL CHECK (role IN ('ADMIN', 'LIBRARIAN'))
+            )""",
             "CREATE INDEX IF NOT EXISTS idx_loans_member ON loans(member_id)",
             "CREATE INDEX IF NOT EXISTS idx_loans_item ON loans(item_id)");
 
@@ -73,7 +82,7 @@ public class Database implements ConnectionSource {
     }
 
     public void resetSchema() throws DataAccessException {
-        run(List.of("DROP TABLE IF EXISTS loans", "DROP TABLE IF EXISTS members", "DROP TABLE IF EXISTS items"));
+        run(List.of("DROP TABLE IF EXISTS staff", "DROP TABLE IF EXISTS loans", "DROP TABLE IF EXISTS members", "DROP TABLE IF EXISTS items"));
         initSchema();
     }
 

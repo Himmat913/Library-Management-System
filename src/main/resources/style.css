@@ -93,3 +93,8 @@
     -fx-background-color: #1f2a44;
     -fx-text-fill: white;
 }
+
+.user-label {
+    -fx-text-fill: #cbd5e1;
+    -fx-padding: 12 4 4 6;
+}

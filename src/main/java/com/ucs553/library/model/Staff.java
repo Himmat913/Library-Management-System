@@ -6,14 +6,16 @@ public class Staff extends Person {
 
     private final String username;
     private final Role role;
+    private final String passwordHash;
 
-    public Staff(String name, String email, String username, Role role) {
+    public Staff(String name, String email, String username, Role role, String passwordHash) {
         super(name, email);
         if (username == null || username.isBlank()) {
             throw new IllegalArgumentException("Username is required");
         }
         this.username = username.trim();
         this.role = role;
+        this.passwordHash = passwordHash;
     }
 
     public String getUsername() {
@@ -22,6 +24,10 @@ public class Staff extends Person {
 
     public Role getRole() {
         return role;
+    }
+
+    public String getPasswordHash() {
+        return passwordHash;
     }
 
     public boolean isAdmin() {

@@ -1,0 +1,114 @@
+package com.ucs553.library.service;
+
+import com.ucs553.library.dao.DataAccessException;
+import com.ucs553.library.dao.StaffDao;
+import com.ucs553.library.exception.LibraryException;
+import com.ucs553.library.model.Role;
+import com.ucs553.library.model.Staff;
+
+import java.util.List;
+import java.util.Optional;
+import java.util.logging.Logger;
+
+public class AuthService {
+
+    private static final Logger LOG = Logger.getLogger(AuthService.class.getName());
+    private static final int MIN_PASSWORD = 6;
+    private static final String DEFAULT_USER = "admin";
+    private static final String DEFAULT_PASSWORD = "admin123";
+    private static final String DUMMY_HASH = PasswordHasher.hash("not-a-real-password".toCharArray());
+
+    private final StaffDao staff;
+
+    public AuthService(StaffDao staff) {
+        this.staff = staff;
+    }
+
+    public boolean ensureDefaultAdmin() throws LibraryException {
+        if (!staff.findAll().isEmpty()) {
+            return false;
+        }
+        staff.insert(new Staff("Administrator", "admin@library.local", DEFAULT_USER, Role.ADMIN,
+                PasswordHasher.hash(DEFAULT_PASSWORD.toCharArray())));
+        LOG.warning("Default admin account created, change its password after the first sign in");
+        return true;
+    }
+
+    public boolean defaultAdminStillUsed() throws DataAccessException {
+        Optional<Staff> admin = staff.findByUsername(DEFAULT_USER);
+        return admin.isPresent() && PasswordHasher.verify(DEFAULT_PASSWORD.toCharArray(), admin.get().getPasswordHash());
+    }
+
+    public Optional<Staff> login(String username, char[] password) throws DataAccessException {
+        Optional<Staff> found = staff.findByUsername(username == null ? "" : username.trim());
+        if (found.isPresent() && PasswordHasher.verify(password, found.get().getPasswordHash())) {
+            LOG.info(found.get().getUsername() + " signed in");
+            return found;
+        }
+        if (found.isEmpty()) {
+            PasswordHasher.verify(password, DUMMY_HASH);
+        }
+        LOG.warning("Failed sign in for \"" + username + "\"");
+        return Optional.empty();
+    }
+
+    public List<Staff> allStaff() throws DataAccessException {
+        return staff.findAll();
+    }
+
+    public Staff createStaff(String name, String email, String username, Role role, char[] password)
+            throws LibraryException {
+        if (username == null || username.isBlank()) {
+            throw new LibraryException("Username is required");
+        }
+        checkPassword(password);
+        if (staff.findByUsername(username.trim()).isPresent()) {
+            throw new LibraryException("The username " + username.trim() + " is already taken");
+        }
+        Staff created;
+        try {
+            created = new Staff(name, email, username, role, PasswordHasher.hash(password));
+        } catch (IllegalArgumentException e) {
+            throw new LibraryException(e.getMessage());
+        }
+        for (Staff existing : staff.findAll()) {
+            if (existing.getEmail().equals(created.getEmail())) {
+                throw new LibraryException("A staff account with that email already exists");
+            }
+        }
+        staff.insert(created);
+        LOG.info("Staff account " + created.getUsername() + " created as " + role);
+        return created;
+    }
+
+    public Staff changePassword(Staff current, char[] oldPassword, char[] newPassword) throws LibraryException {
+        if (!PasswordHasher.verify(oldPassword, current.getPasswordHash())) {
+            throw new LibraryException("The current password is wrong");
+        }
+        checkPassword(newPassword);
+        Staff updated = new Staff(current.getName(), current.getEmail(), current.getUsername(),
+                current.getRole(), PasswordHasher.hash(newPassword));
+        updated.setId(current.getId());
+        staff.update(updated);
+        LOG.info(updated.getUsername() + " changed their password");
+        return updated;
+    }
+
+    public void deleteStaff(int id, Staff actor) throws LibraryException {
+        Staff target = staff.findById(id).orElseThrow(() -> new com.ucs553.library.exception.NotFoundException("Staff", id));
+        if (target.getId() == actor.getId()) {
+            throw new LibraryException("You cannot delete your own account");
+        }
+        if (target.isAdmin() && staff.countAdmins() <= 1) {
+            throw new LibraryException("The last administrator cannot be deleted");
+        }
+        staff.delete(id);
+        LOG.info("Staff account " + target.getUsername() + " deleted by " + actor.getUsername());
+    }
+
+    private void checkPassword(char[] password) throws LibraryException {
+        if (password == null || password.length < MIN_PASSWORD) {
+            throw new LibraryException("Passwords need at least " + MIN_PASSWORD + " characters");
+        }
+    }
+}
