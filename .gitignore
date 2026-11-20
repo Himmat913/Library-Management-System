@@ -1,0 +1,26 @@
+# Build output
+target/
+*.class
+*.jar
+
+# Runtime data (created by the app)
+data/*.db
+data/*.db-journal
+data/backups/
+data/exports/
+logs/
+
+# IDE / OS
+.idea/
+*.iml
+.vscode/
+.classpath
+.project
+.settings/
+.DS_Store
+Thumbs.db
+~$*
+
+# Private working notes (Word documents) stay local, never in the repository
+internal/
+*.docx
