@@ -1,5 +1,7 @@
 package com.ucs553.library;
 
+import com.ucs553.library.config.SettingsStore;
+import com.ucs553.library.config.UserSettings;
 import com.ucs553.library.model.Staff;
 import com.ucs553.library.ui.LoginView;
 import com.ucs553.library.ui.MainView;
@@ -8,6 +10,7 @@ import javafx.scene.Scene;
 import javafx.scene.layout.Region;
 import javafx.stage.Stage;
 
+import java.nio.file.Path;
 import java.util.logging.Logger;
 
 public class LibraryApp extends Application {
@@ -17,13 +20,17 @@ public class LibraryApp extends Application {
     private AppContext context;
     private String name;
     private Scene scene;
+    private SettingsStore settingsStore;
+    private UserSettings settings;
 
     @Override
     public void start(Stage stage) {
         context = AppContext.get();
         name = context.config().getString("app.name");
+        settingsStore = new SettingsStore(Path.of(context.config().getString("settings.file")));
+        settings = settingsStore.load();
 
-        scene = new Scene(new Region(), 1100, 700);
+        scene = new Scene(new Region(), Math.max(900, settings.getWindowWidth()), Math.max(560, settings.getWindowHeight()));
         scene.getStylesheets().add(getClass().getResource("/style.css").toExternalForm());
         showLogin();
 
@@ -36,16 +43,19 @@ public class LibraryApp extends Application {
 
     private void showLogin() {
         Session.clear();
-        scene.setRoot(new LoginView(name, context.auth(), this::showMain));
+        scene.setRoot(new LoginView(name, context.auth(), settings.getLastUsername(), this::showMain));
     }
 
     private void showMain(Staff user) {
         Session.set(user);
-        scene.setRoot(new MainView(name, context.service(), context.auth(), user, this::showLogin));
+        settings.setLastUsername(user.getUsername());
+        scene.setRoot(new MainView(name, context.service(), context.auth(), user, settings, this::showLogin));
     }
 
     @Override
     public void stop() {
+        settings.setWindowSize(scene.getWidth(), scene.getHeight());
+        settingsStore.save(settings);
         LOG.info("Application closed");
     }
 }

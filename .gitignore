@@ -8,6 +8,7 @@ data/*.db
 data/*.db-journal
 data/backups/
 data/exports/
+data/*.ser
 logs/
 
 # IDE / OS

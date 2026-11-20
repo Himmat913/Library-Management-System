@@ -1,6 +1,7 @@
 package com.ucs553.library.ui;
 
 import com.ucs553.library.Session;
+import com.ucs553.library.config.UserSettings;
 import com.ucs553.library.exception.LibraryException;
 import com.ucs553.library.model.Staff;
 import com.ucs553.library.service.AuthService;
@@ -19,6 +20,8 @@ import javafx.scene.layout.Region;
 import javafx.scene.layout.VBox;
 
 import java.util.Arrays;
+import java.util.HashMap;
+import java.util.Map;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
@@ -30,10 +33,15 @@ public class MainView extends BorderPane {
     private final VBox sidebar = new VBox(4);
     private final StringProperty status = new SimpleStringProperty("");
     private final AuthService auth;
+    private final UserSettings settings;
+    private final Map<String, ToggleButton> pages = new HashMap<>();
     private Staff user;
 
-    public MainView(String appName, LibraryService service, AuthService auth, Staff user, Runnable onSignOut) {
+    public MainView(String appName, LibraryService service, AuthService auth, Staff user, UserSettings settings,
+                    Runnable onSignOut) {
         this.auth = auth;
+        this.settings = settings;
+        String wantedPage = settings.getLastPage();
         this.user = user;
 
         Label title = new Label(appName);
@@ -64,6 +72,11 @@ public class MainView extends BorderPane {
         if (user.isAdmin()) {
             addPage("Staff", new StaffView(auth, status));
         }
+        addPage("About", new AboutView());
+        ToggleButton wanted = pages.get(wantedPage);
+        if (wanted != null) {
+            wanted.setSelected(true);
+        }
 
         Region spacer = new Region();
         VBox.setVgrow(spacer, Priority.ALWAYS);
@@ -85,11 +98,13 @@ public class MainView extends BorderPane {
         button.getStyleClass().add("nav-button");
         button.selectedProperty().addListener((obs, was, selected) -> {
             if (selected) {
+                settings.setLastPage(name);
                 view.refresh();
                 setCenter(view);
             }
         });
         sidebar.getChildren().add(button);
+        pages.put(name, button);
         if (group.getSelectedToggle() == null) {
             button.setSelected(true);
         }

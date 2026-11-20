@@ -22,7 +22,7 @@ public class LoginView extends StackPane {
 
     private static final Logger LOG = Logger.getLogger(LoginView.class.getName());
 
-    public LoginView(String appName, AuthService auth, Consumer<Staff> onSuccess) {
+    public LoginView(String appName, AuthService auth, String lastUsername, Consumer<Staff> onSuccess) {
         Label title = new Label(appName);
         title.getStyleClass().add("member-name");
         title.setWrapText(true);
@@ -31,6 +31,7 @@ public class LoginView extends StackPane {
 
         TextField username = new TextField();
         username.setPromptText("Username");
+        username.setText(lastUsername == null ? "" : lastUsername);
         PasswordField password = new PasswordField();
         password.setPromptText("Password");
 
@@ -77,6 +78,6 @@ public class LoginView extends StackPane {
                 Arrays.fill(typed, ' ');
             }
         });
-        Platform.runLater(username::requestFocus);
+        Platform.runLater(username.getText().isEmpty() ? username::requestFocus : password::requestFocus);
     }
 }
