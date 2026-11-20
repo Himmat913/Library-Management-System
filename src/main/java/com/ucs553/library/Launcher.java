@@ -68,7 +68,7 @@ public class Launcher {
             }
             AuthService auth = new AuthService(new JdbcStaffDao(database));
             auth.ensureDefaultAdmin();
-            AppContext.init(config, new LibraryService(items, members, loans, new PerDayFinePolicy(), clock), database, auth);
+            AppContext.init(config, new LibraryService(items, members, loans, new PerDayFinePolicy(), clock, database), database, auth);
         } catch (LibraryException e) {
             log.log(Level.SEVERE, "Database setup failed", e);
             System.exit(1);

@@ -1,11 +1,14 @@
 package com.ucs553.library.dao;
 
+import com.ucs553.library.exception.LibraryException;
 import org.sqlite.SQLiteConfig;
 
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.InvalidPathException;
 import java.nio.file.Path;
+import java.lang.reflect.InvocationTargetException;
+import java.lang.reflect.Proxy;
 import java.sql.Connection;
 import java.sql.DriverManager;
 import java.sql.PreparedStatement;
@@ -13,7 +16,7 @@ import java.sql.SQLException;
 import java.sql.Statement;
 import java.util.List;
 
-public class Database implements ConnectionSource {
+public class Database implements ConnectionSource, TransactionRunner {
 
     private static final String PREFIX = "jdbc:sqlite:";
 
@@ -65,6 +68,7 @@ public class Database implements ConnectionSource {
 
     private final String url;
     private final SQLiteConfig config = new SQLiteConfig();
+    private final ThreadLocal<Connection> current = new ThreadLocal<>();
 
     public Database(String url) throws DataAccessException {
         this.url = url;
@@ -74,7 +78,57 @@ public class Database implements ConnectionSource {
 
     @Override
     public Connection getConnection() throws SQLException {
+        Connection inTransaction = current.get();
+        if (inTransaction != null) {
+            return inTransaction;
+        }
         return DriverManager.getConnection(url, config.toProperties());
+    }
+
+    @Override
+    public <T> T run(TransactionWork<T> work) throws LibraryException {
+        if (current.get() != null) {
+            return work.execute();
+        }
+        try (Connection real = DriverManager.getConnection(url, config.toProperties())) {
+            real.setAutoCommit(false);
+            current.set(keepOpen(real));
+            try {
+                T result = work.execute();
+                real.commit();
+                return result;
+            } catch (LibraryException | RuntimeException e) {
+                rollback(real, e);
+                throw e;
+            } finally {
+                current.remove();
+            }
+        } catch (SQLException e) {
+            throw new DataAccessException("The transaction could not be completed", e);
+        }
+    }
+
+    private static void rollback(Connection connection, Exception cause) {
+        try {
+            connection.rollback();
+        } catch (SQLException e) {
+            cause.addSuppressed(e);
+        }
+    }
+
+    // DAOs close their connection after every call; inside a transaction that close must be ignored
+    private static Connection keepOpen(Connection real) {
+        return (Connection) Proxy.newProxyInstance(Database.class.getClassLoader(), new Class<?>[]{Connection.class},
+                (proxy, method, args) -> {
+                    if (method.getName().equals("close")) {
+                        return null;
+                    }
+                    try {
+                        return method.invoke(real, args);
+                    } catch (InvocationTargetException e) {
+                        throw e.getCause();
+                    }
+                });
     }
 
     public void initSchema() throws DataAccessException {

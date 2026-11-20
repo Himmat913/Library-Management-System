@@ -24,6 +24,7 @@ class LibraryServiceTest {
     @TempDir
     Path dir;
 
+    private Database db;
     private MutableClock clock;
     private LibraryService service;
     private Book book;
@@ -31,11 +32,11 @@ class LibraryServiceTest {
 
     @BeforeEach
     void setUp() throws Exception {
-        Database db = new Database("jdbc:sqlite:" + dir.resolve("test.db"));
+        db = new Database("jdbc:sqlite:" + dir.resolve("test.db"));
         db.initSchema();
         clock = new MutableClock(LocalDate.of(2026, 11, 1));
         service = new LibraryService(new JdbcItemDao(db), new JdbcMemberDao(db), new JdbcLoanDao(db),
-                new PerDayFinePolicy(), clock);
+                new PerDayFinePolicy(), clock, db);
 
         book = new Book.Builder().title("Effective Java").author("Joshua Bloch").year(2018).copies(1).build();
         service.saveItem(book);
@@ -139,5 +140,34 @@ class LibraryServiceTest {
         edited.setId(member.getId());
         service.saveMember(edited);
         assertEquals(4, service.findMember(member.getId()).orElseThrow().getBorrowLimit());
+    }
+
+    @Test
+    void failedBorrowRollsBackTheCopyCount() throws Exception {
+        LibraryService failing = new LibraryService(new JdbcItemDao(db), new JdbcMemberDao(db), new JdbcLoanDao(db) {
+            @Override
+            public int insert(Loan loan) throws DataAccessException {
+                throw new DataAccessException("forced failure");
+            }
+        }, new PerDayFinePolicy(), clock, db);
+
+        assertThrows(DataAccessException.class, () -> failing.borrow(book.getId(), member.getId()));
+        assertEquals(1, service.findItem(book.getId()).orElseThrow().getAvailableCopies());
+        assertEquals(0, service.activeLoanCount(member.getId()));
+    }
+
+    @Test
+    void failedReturnLeavesLoanAndCopyCountUntouched() throws Exception {
+        Loan loan = service.borrow(book.getId(), member.getId());
+        LibraryService failing = new LibraryService(new JdbcItemDao(db), new JdbcMemberDao(db), new JdbcLoanDao(db) {
+            @Override
+            public void update(Loan changed) throws DataAccessException {
+                throw new DataAccessException("forced failure");
+            }
+        }, new PerDayFinePolicy(), clock, db);
+
+        assertThrows(DataAccessException.class, () -> failing.returnLoan(loan.getId()));
+        assertEquals(0, service.findItem(book.getId()).orElseThrow().getAvailableCopies());
+        assertEquals(1, service.activeLoanCount(member.getId()));
     }
 }

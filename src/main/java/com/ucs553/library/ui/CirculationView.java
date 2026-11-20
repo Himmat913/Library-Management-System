@@ -7,20 +7,25 @@ import com.ucs553.library.model.Loan;
 import com.ucs553.library.model.LoanStatus;
 import com.ucs553.library.model.Member;
 import com.ucs553.library.service.LibraryService;
+import com.ucs553.library.service.LoanEvent;
 import com.ucs553.library.service.ReturnResult;
 import javafx.beans.binding.Bindings;
 import javafx.beans.property.ReadOnlyObjectWrapper;
 import javafx.beans.property.ReadOnlyStringWrapper;
 import javafx.beans.property.StringProperty;
 import javafx.collections.FXCollections;
+import javafx.event.ActionEvent;
+import javafx.event.EventHandler;
 import javafx.collections.ObservableList;
 import javafx.collections.transformation.FilteredList;
 import javafx.collections.transformation.SortedList;
 import javafx.geometry.Insets;
 import javafx.geometry.Pos;
 import javafx.scene.control.Button;
+import javafx.scene.control.CheckBox;
 import javafx.scene.control.ComboBox;
 import javafx.scene.control.Label;
+import javafx.scene.control.ListView;
 import javafx.scene.control.TableCell;
 import javafx.scene.control.TableColumn;
 import javafx.scene.control.TableRow;
@@ -38,6 +43,8 @@ import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
+import java.util.Iterator;
+import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
 import java.util.function.Function;
@@ -70,6 +77,7 @@ public class CirculationView extends BorderPane implements Refreshable {
     }
 
     private static final Logger LOG = Logger.getLogger(CirculationView.class.getName());
+    private static final int MAX_RECENT = 8;
     private static final DateTimeFormatter DATE = DateTimeFormatter.ofPattern("dd MMM yyyy");
 
     private final LibraryService service;
@@ -80,6 +88,10 @@ public class CirculationView extends BorderPane implements Refreshable {
     private final ComboBox<Member> memberBox = new ComboBox<>();
     private final ComboBox<Item> itemBox = new ComboBox<>();
     private final Label summary = new Label();
+    private final CheckBox finesOnly = new CheckBox("With fines only");
+    private final LinkedList<String> recent = new LinkedList<>();
+    private final ListView<String> activity = new ListView<>();
+    private Filter current = Filter.ACTIVE;
 
     public CirculationView(LibraryService service, StringProperty status) {
         this.service = service;
@@ -91,7 +103,12 @@ public class CirculationView extends BorderPane implements Refreshable {
         setCenter(table);
         BorderPane.setMargin(table, new Insets(12, 0, 0, 0));
 
-        service.addListener(event -> refresh());
+        setRight(buildActivityPanel());
+
+        service.addListener(event -> {
+            recordActivity(event);
+            refresh();
+        });
     }
 
     private HBox buildIssuePanel() {
@@ -101,7 +118,12 @@ public class CirculationView extends BorderPane implements Refreshable {
         itemBox.setPrefWidth(340);
         Button issue = new Button("Issue loan");
         issue.getStyleClass().add("primary");
-        issue.setOnAction(e -> issueLoan());
+        issue.setOnAction(new EventHandler<ActionEvent>() {
+            @Override
+            public void handle(ActionEvent event) {
+                issueLoan();
+            }
+        });
 
         HBox panel = new HBox(10, new Label("Member"), memberBox, new Label("Item"), itemBox, issue);
         panel.setAlignment(Pos.CENTER_LEFT);
@@ -118,8 +140,8 @@ public class CirculationView extends BorderPane implements Refreshable {
             button.getStyleClass().add("segment");
             button.selectedProperty().addListener((obs, was, selected) -> {
                 if (selected) {
-                    filtered.setPredicate(filter::accepts);
-                    updateStatus();
+                    current = filter;
+                    applyFilter();
                 }
             });
             segments.getChildren().add(button);
@@ -143,9 +165,47 @@ public class CirculationView extends BorderPane implements Refreshable {
         summary.getStyleClass().add("muted");
         Region spacer = new Region();
         HBox.setHgrow(spacer, Priority.ALWAYS);
-        HBox bar = new HBox(16, segments, summary, spacer, giveBack);
+        finesOnly.selectedProperty().addListener((obs, was, now) -> applyFilter());
+        HBox bar = new HBox(16, segments, finesOnly, summary, spacer, giveBack);
         bar.setAlignment(Pos.CENTER_LEFT);
         return bar;
+    }
+
+    private VBox buildActivityPanel() {
+        activity.setPlaceholder(new Label("No activity yet this session"));
+        activity.setPrefWidth(250);
+        VBox panel = new VBox(6, new Label("Recent activity"), activity);
+        panel.setPadding(new Insets(0, 0, 0, 12));
+        VBox.setVgrow(activity, Priority.ALWAYS);
+        return panel;
+    }
+
+    private void applyFilter() {
+        filtered.setPredicate(row -> current.accepts(row) && (!finesOnly.isSelected() || row.fine().signum() > 0));
+        updateStatus();
+    }
+
+    private void recordActivity(LoanEvent event) {
+        String title = "item " + event.loan().getItemId();
+        String who = "member " + event.loan().getMemberId();
+        try {
+            title = service.findItem(event.loan().getItemId()).map(Item::getTitle).orElse(title);
+            who = service.findMember(event.loan().getMemberId()).map(Member::getName).orElse(who);
+        } catch (LibraryException e) {
+            LOG.log(Level.WARNING, "Could not describe the loan event", e);
+        }
+        String verb = event.type() == LoanEvent.Type.ISSUED ? " borrowed " : " returned ";
+        recent.addFirst(who + verb + title);
+
+        int seen = 0;
+        Iterator<String> it = recent.iterator();
+        while (it.hasNext()) {
+            it.next();
+            if (++seen > MAX_RECENT) {
+                it.remove();
+            }
+        }
+        activity.getItems().setAll(recent);
     }
 
     private void buildTable() {

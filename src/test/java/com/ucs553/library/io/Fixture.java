@@ -17,9 +17,10 @@ final class Fixture {
     private final JdbcItemDao items;
     private final JdbcMemberDao members;
     private final JdbcLoanDao loans;
+    private final Database db;
 
     Fixture(Path dir) throws Exception {
-        Database db = new Database("jdbc:sqlite:" + dir.resolve("test.db"));
+        db = new Database("jdbc:sqlite:" + dir.resolve("test.db"));
         db.initSchema();
         items = new JdbcItemDao(db);
         members = new JdbcMemberDao(db);
@@ -28,6 +29,6 @@ final class Fixture {
 
     LibraryService on(LocalDate day) {
         Clock clock = Clock.fixed(day.atStartOfDay().toInstant(ZoneOffset.UTC), ZoneOffset.UTC);
-        return new LibraryService(items, members, loans, new PerDayFinePolicy(), clock);
+        return new LibraryService(items, members, loans, new PerDayFinePolicy(), clock, db);
     }
 }

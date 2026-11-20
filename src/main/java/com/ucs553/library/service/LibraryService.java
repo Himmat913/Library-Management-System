@@ -4,6 +4,7 @@ import com.ucs553.library.dao.DataAccessException;
 import com.ucs553.library.dao.ItemDao;
 import com.ucs553.library.dao.LoanDao;
 import com.ucs553.library.dao.MemberDao;
+import com.ucs553.library.dao.TransactionRunner;
 import com.ucs553.library.exception.LibraryException;
 import com.ucs553.library.exception.NotFoundException;
 import com.ucs553.library.fine.FinePolicy;
@@ -34,14 +35,17 @@ public class LibraryService {
     private final LoanDao loans;
     private final FinePolicy finePolicy;
     private final Clock clock;
+    private final TransactionRunner transactions;
     private final List<LoanListener> listeners = new CopyOnWriteArrayList<>();
 
-    public LibraryService(ItemDao items, MemberDao members, LoanDao loans, FinePolicy finePolicy, Clock clock) {
+    public LibraryService(ItemDao items, MemberDao members, LoanDao loans, FinePolicy finePolicy, Clock clock,
+                          TransactionRunner transactions) {
         this.items = items;
         this.members = members;
         this.loans = loans;
         this.finePolicy = finePolicy;
         this.clock = clock;
+        this.transactions = transactions;
     }
 
     public void addListener(LoanListener listener) {
@@ -52,48 +56,49 @@ public class LibraryService {
         listeners.remove(listener);
     }
 
+    private record Borrowed(Loan loan, Item item, Member member) {
+    }
+
+    private record Returned(Loan loan, Item item) {
+    }
+
     public Loan borrow(int itemId, int memberId) throws LibraryException {
-        Item item = items.findById(itemId).orElseThrow(() -> new NotFoundException("Item", itemId));
-        Member member = members.findById(memberId).orElseThrow(() -> new NotFoundException("Member", memberId));
+        Borrowed done = transactions.run(() -> {
+            Item item = items.findById(itemId).orElseThrow(() -> new NotFoundException("Item", itemId));
+            Member member = members.findById(memberId).orElseThrow(() -> new NotFoundException("Member", memberId));
 
-        member.checkCanBorrow(loans.countActiveByMember(memberId));
-        item.checkOut();
-        items.update(item);
-
-        Loan loan = new Loan(itemId, memberId, today(), item.getType());
-        try {
-            loans.insert(loan);
-        } catch (DataAccessException e) {
-            item.checkIn();
+            member.checkCanBorrow(loans.countActiveByMember(memberId));
+            item.checkOut();
             items.update(item);
-            throw e;
-        }
-        LOG.info(member.getName() + " borrowed " + item.getTitle() + ", due " + loan.getDueOn());
+
+            Loan loan = new Loan(itemId, memberId, today(), item.getType());
+            loans.insert(loan);
+            return new Borrowed(loan, item, member);
+        });
+        Loan loan = done.loan();
+        LOG.info(done.member().getName() + " borrowed " + done.item().getTitle() + ", due " + loan.getDueOn());
         fire(new LoanEvent(LoanEvent.Type.ISSUED, loan));
         return loan;
     }
 
     public ReturnResult returnLoan(int loanId) throws LibraryException {
-        Loan loan = loans.findById(loanId).orElseThrow(() -> new NotFoundException("Loan", loanId));
-        if (loan.getReturnedOn() != null) {
-            throw new LibraryException("This loan was already returned on " + loan.getReturnedOn());
-        }
-        Item item = items.findById(loan.getItemId()).orElseThrow(() -> new NotFoundException("Item", loan.getItemId()));
-
         LocalDate today = today();
-        item.checkIn();
-        items.update(item);
-        loan.markReturned(today);
-        try {
-            loans.update(loan);
-        } catch (DataAccessException e) {
-            item.checkOut();
-            items.update(item);
-            throw e;
-        }
+        Returned done = transactions.run(() -> {
+            Loan loan = loans.findById(loanId).orElseThrow(() -> new NotFoundException("Loan", loanId));
+            if (loan.getReturnedOn() != null) {
+                throw new LibraryException("This loan was already returned on " + loan.getReturnedOn());
+            }
+            Item item = items.findById(loan.getItemId()).orElseThrow(() -> new NotFoundException("Item", loan.getItemId()));
 
-        BigDecimal fine = finePolicy.calculate(item.getType(), loan.overdueDays(today));
-        LOG.info("Returned " + item.getTitle() + ", fine " + fine);
+            item.checkIn();
+            items.update(item);
+            loan.markReturned(today);
+            loans.update(loan);
+            return new Returned(loan, item);
+        });
+        Loan loan = done.loan();
+        BigDecimal fine = finePolicy.calculate(done.item().getType(), loan.overdueDays(today));
+        LOG.info("Returned " + done.item().getTitle() + ", fine " + fine);
         fire(new LoanEvent(LoanEvent.Type.RETURNED, loan));
         return new ReturnResult(loan, fine);
     }
