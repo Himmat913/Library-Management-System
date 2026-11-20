@@ -1,8 +1,11 @@
 package com.ucs553.library.config;
 
 import java.io.IOException;
+import java.io.PrintWriter;
+import java.io.StringWriter;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.util.Date;
 import java.util.logging.ConsoleHandler;
 import java.util.logging.FileHandler;
 import java.util.logging.Handler;
@@ -57,10 +60,10 @@ public final class LogSetup {
         public String format(LogRecord r) {
             String name = r.getLoggerName() == null ? "" : r.getLoggerName().substring(r.getLoggerName().lastIndexOf('.') + 1);
             String line = String.format("%1$tF %1$tT %2$-7s %3$s - %4$s%n",
-                    new java.util.Date(r.getMillis()), r.getLevel(), name, formatMessage(r));
+                    new Date(r.getMillis()), r.getLevel(), name, formatMessage(r));
             if (r.getThrown() != null) {
-                java.io.StringWriter sw = new java.io.StringWriter();
-                r.getThrown().printStackTrace(new java.io.PrintWriter(sw));
+                StringWriter sw = new StringWriter();
+                r.getThrown().printStackTrace(new PrintWriter(sw));
                 line += sw;
             }
             return line;

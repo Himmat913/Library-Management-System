@@ -72,7 +72,6 @@ public class MainView extends BorderPane {
         if (user.isAdmin()) {
             addPage("Staff", new StaffView(auth, status));
         }
-        addPage("About", new AboutView());
         ToggleButton wanted = pages.get(wantedPage);
         if (wanted != null) {
             wanted.setSelected(true);

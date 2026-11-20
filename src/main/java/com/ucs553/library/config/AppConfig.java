@@ -44,7 +44,6 @@ public final class AppConfig {
         d.setProperty("backup.dir", "data/backups");
         d.setProperty("export.dir", "data/exports");
         d.setProperty("settings.file", "data/settings.ser");
-        d.setProperty("app.version", "0.1.0");
         return d;
     }
 

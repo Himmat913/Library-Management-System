@@ -1,5 +1,7 @@
 package com.ucs553.library.ui;
 
+import com.ucs553.library.AppContext;
+import com.ucs553.library.config.ConfigException;
 import com.ucs553.library.model.Member;
 import javafx.event.ActionEvent;
 import javafx.geometry.Insets;
@@ -48,7 +50,9 @@ class MemberDialog extends Dialog<Member> {
         content.setPrefWidth(420);
         getDialogPane().setContent(content);
 
-        if (existing != null) {
+        if (existing == null) {
+            limit.setText(defaultLimit());
+        } else {
             name.setText(existing.getName());
             email.setText(existing.getEmail());
             limit.setText(String.valueOf(existing.getBorrowLimit()));
@@ -63,6 +67,14 @@ class MemberDialog extends Dialog<Member> {
             }
         });
         setResultConverter(button -> button == ButtonType.OK ? result : null);
+    }
+
+    private static String defaultLimit() {
+        try {
+            return String.valueOf(AppContext.get().config().getInt("member.borrowLimit"));
+        } catch (ConfigException | IllegalStateException e) {
+            return String.valueOf(Member.DEFAULT_BORROW_LIMIT);
+        }
     }
 
     private Member build() {
