@@ -43,6 +43,7 @@ public class MainView extends BorderPane {
         addPage("Circulation", new CirculationView(service, status));
         addPage("Items", new ItemsView(service, status));
         addPage("Members", new MembersView(service, status));
+        addPage("Reports", new ReportsView(status));
     }
 
     private <V extends Region & Refreshable> void addPage(String name, V view) {

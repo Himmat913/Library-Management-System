@@ -64,7 +64,7 @@ public class Launcher {
             if (options.seedDemo()) {
                 new DemoDataSeeder(items, members, loans, clock).seed();
             }
-            AppContext.init(config, new LibraryService(items, members, loans, new PerDayFinePolicy(), clock));
+            AppContext.init(config, new LibraryService(items, members, loans, new PerDayFinePolicy(), clock), database);
         } catch (LibraryException e) {
             log.log(Level.SEVERE, "Database setup failed", e);
             System.exit(1);

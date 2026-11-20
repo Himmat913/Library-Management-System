@@ -41,6 +41,8 @@ public final class AppConfig {
         d.setProperty("log.level", "INFO");
         d.setProperty("log.dir", "logs");
         d.setProperty("member.borrowLimit", "5");
+        d.setProperty("backup.dir", "data/backups");
+        d.setProperty("export.dir", "data/exports");
         return d;
     }
 

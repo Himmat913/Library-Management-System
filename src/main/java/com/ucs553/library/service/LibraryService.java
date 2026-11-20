@@ -15,11 +15,15 @@ import com.ucs553.library.model.Member;
 import java.math.BigDecimal;
 import java.time.Clock;
 import java.time.LocalDate;
+import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 import java.util.concurrent.CopyOnWriteArrayList;
+import java.util.function.Function;
 import java.util.logging.Level;
 import java.util.logging.Logger;
+import java.util.stream.Collectors;
 
 public class LibraryService {
 
@@ -101,6 +105,23 @@ public class LibraryService {
 
     public BigDecimal fineFor(Loan loan, ItemType type) {
         return finePolicy.calculate(type, loan.overdueDays(today()));
+    }
+
+    public List<LoanDetail> loanDetails() throws DataAccessException {
+        Map<Integer, Item> itemById = items.findAll().stream().collect(Collectors.toMap(Item::getId, Function.identity()));
+        Map<Integer, Member> memberById = members.findAll().stream().collect(Collectors.toMap(Member::getId, Function.identity()));
+        LocalDate today = today();
+        List<LoanDetail> details = new ArrayList<>();
+        for (Loan loan : loans.findAll()) {
+            Item item = itemById.get(loan.getItemId());
+            Member member = memberById.get(loan.getMemberId());
+            details.add(new LoanDetail(loan,
+                    item == null ? "(removed)" : item.getTitle(),
+                    member == null ? "(removed)" : member.getName(),
+                    loan.statusOn(today),
+                    item == null ? BigDecimal.ZERO : fineFor(loan, item.getType())));
+        }
+        return details;
     }
 
     public List<Loan> activeLoans() throws DataAccessException {

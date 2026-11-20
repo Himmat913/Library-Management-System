@@ -8,6 +8,7 @@ import java.nio.file.InvalidPathException;
 import java.nio.file.Path;
 import java.sql.Connection;
 import java.sql.DriverManager;
+import java.sql.PreparedStatement;
 import java.sql.SQLException;
 import java.sql.Statement;
 import java.util.List;
@@ -74,6 +75,21 @@ public class Database implements ConnectionSource {
     public void resetSchema() throws DataAccessException {
         run(List.of("DROP TABLE IF EXISTS loans", "DROP TABLE IF EXISTS members", "DROP TABLE IF EXISTS items"));
         initSchema();
+    }
+
+    public void backupTo(Path target) throws DataAccessException {
+        try {
+            Path parent = target.toAbsolutePath().getParent();
+            if (parent != null) {
+                Files.createDirectories(parent);
+            }
+            try (Connection c = getConnection(); PreparedStatement ps = c.prepareStatement("VACUUM INTO ?")) {
+                ps.setString(1, target.toAbsolutePath().toString());
+                ps.execute();
+            }
+        } catch (IOException | SQLException e) {
+            throw new DataAccessException("Could not back up the database to " + target, e);
+        }
     }
 
     private void run(List<String> statements) throws DataAccessException {
