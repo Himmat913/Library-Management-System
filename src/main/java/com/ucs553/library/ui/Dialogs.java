@@ -16,6 +16,13 @@ final class Dialogs {
         alert.showAndWait();
     }
 
+    static void info(Window owner, String message) {
+        Alert alert = new Alert(Alert.AlertType.INFORMATION, message, ButtonType.OK);
+        alert.setHeaderText(null);
+        alert.initOwner(owner);
+        alert.showAndWait();
+    }
+
     static boolean confirm(Window owner, String message) {
         Alert alert = new Alert(Alert.AlertType.CONFIRMATION, message, ButtonType.YES, ButtonType.NO);
         alert.setHeaderText(null);

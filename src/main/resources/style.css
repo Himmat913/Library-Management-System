@@ -74,3 +74,22 @@
     -fx-font-weight: bold;
     -fx-text-fill: #334155;
 }
+
+.card {
+    -fx-background-color: white;
+    -fx-background-radius: 8;
+    -fx-padding: 12;
+    -fx-border-color: #e2e8f0;
+    -fx-border-radius: 8;
+}
+
+.segment {
+    -fx-background-color: #e2e8f0;
+    -fx-text-fill: #334155;
+    -fx-background-radius: 0;
+}
+
+.segment:selected {
+    -fx-background-color: #1f2a44;
+    -fx-text-fill: white;
+}

@@ -98,6 +98,7 @@ class LibraryServiceTest {
         clock.advanceDays(17);
         assertEquals(1, service.overdueLoans().size());
         assertEquals(new BigDecimal("15.00"), service.currentFine(loan));
+        assertEquals(new BigDecimal("15.00"), service.fineFor(loan, ItemType.BOOK));
         ReturnResult result = service.returnLoan(loan.getId());
         assertEquals(new BigDecimal("15.00"), result.fine());
         assertTrue(service.overdueLoans().isEmpty());

@@ -8,6 +8,7 @@ import com.ucs553.library.exception.LibraryException;
 import com.ucs553.library.exception.NotFoundException;
 import com.ucs553.library.fine.FinePolicy;
 import com.ucs553.library.model.Item;
+import com.ucs553.library.model.ItemType;
 import com.ucs553.library.model.Loan;
 import com.ucs553.library.model.Member;
 
@@ -96,6 +97,10 @@ public class LibraryService {
     public BigDecimal currentFine(Loan loan) throws LibraryException {
         Item item = items.findById(loan.getItemId()).orElseThrow(() -> new NotFoundException("Item", loan.getItemId()));
         return finePolicy.calculate(item.getType(), loan.overdueDays(today()));
+    }
+
+    public BigDecimal fineFor(Loan loan, ItemType type) {
+        return finePolicy.calculate(type, loan.overdueDays(today()));
     }
 
     public List<Loan> activeLoans() throws DataAccessException {
