@@ -41,6 +41,7 @@ public class MainView extends BorderPane {
         });
 
         addPage("Items", new ItemsView(service, status));
+        addPage("Members", new MembersView(service, status));
     }
 
     private <V extends Region & Refreshable> void addPage(String name, V view) {

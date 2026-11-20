@@ -52,6 +52,14 @@ class LibraryServiceTest {
     }
 
     @Test
+    void activeLoansOfListsOnlyThatMembersOpenLoans() throws Exception {
+        Loan loan = service.borrow(book.getId(), member.getId());
+        assertEquals(1, service.activeLoansOf(member.getId()).size());
+        service.returnLoan(loan.getId());
+        assertTrue(service.activeLoansOf(member.getId()).isEmpty());
+    }
+
+    @Test
     void borrowFailsWhenNoCopyIsLeft() throws Exception {
         Member other = new Member("Priya", "priya@example.com");
         service.saveMember(other);

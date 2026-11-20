@@ -55,3 +55,22 @@
 .details {
     -fx-text-fill: #334155;
 }
+
+.table-row-cell.overdue .table-cell {
+    -fx-text-fill: #b91c1c;
+}
+
+.member-name {
+    -fx-font-size: 20px;
+    -fx-font-weight: bold;
+    -fx-text-fill: #1f2a44;
+}
+
+.muted {
+    -fx-text-fill: #64748b;
+}
+
+.section-title {
+    -fx-font-weight: bold;
+    -fx-text-fill: #334155;
+}

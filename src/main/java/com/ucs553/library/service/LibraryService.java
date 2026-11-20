@@ -102,6 +102,10 @@ public class LibraryService {
         return loans.findActive();
     }
 
+    public List<Loan> activeLoansOf(int memberId) throws DataAccessException {
+        return loans.findActiveByMember(memberId);
+    }
+
     public List<Loan> overdueLoans() throws DataAccessException {
         return loans.findOverdue(today());
     }
