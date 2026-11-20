@@ -1,20 +1,33 @@
 package com.ucs553.library;
 
+import com.ucs553.library.ui.MainView;
 import javafx.application.Application;
 import javafx.scene.Scene;
-import javafx.scene.control.Label;
-import javafx.scene.layout.BorderPane;
 import javafx.stage.Stage;
+
+import java.util.logging.Logger;
 
 public class LibraryApp extends Application {
 
+    private static final Logger LOG = Logger.getLogger(LibraryApp.class.getName());
+
     @Override
     public void start(Stage stage) {
-        Label title = new Label("Library Management System");
-        title.setStyle("-fx-font-size: 22px;");
+        AppContext context = AppContext.get();
+        String name = context.config().getString("app.name");
 
-        stage.setTitle("Library Management System");
-        stage.setScene(new Scene(new BorderPane(title), 1000, 650));
+        Scene scene = new Scene(new MainView(name, context.service()), 1100, 700);
+        scene.getStylesheets().add(getClass().getResource("/style.css").toExternalForm());
+
+        stage.setTitle(name);
+        stage.setMinWidth(900);
+        stage.setMinHeight(560);
+        stage.setScene(scene);
         stage.show();
+    }
+
+    @Override
+    public void stop() {
+        LOG.info("Application closed");
     }
 }

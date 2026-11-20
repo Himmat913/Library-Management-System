@@ -8,7 +8,9 @@ import com.ucs553.library.dao.JdbcItemDao;
 import com.ucs553.library.dao.JdbcLoanDao;
 import com.ucs553.library.dao.JdbcMemberDao;
 import com.ucs553.library.exception.LibraryException;
+import com.ucs553.library.fine.PerDayFinePolicy;
 import com.ucs553.library.service.DemoDataSeeder;
+import com.ucs553.library.service.LibraryService;
 import javafx.application.Application;
 
 import java.io.IOException;
@@ -53,14 +55,21 @@ public class Launcher {
             } else {
                 database.initSchema();
             }
+
+            JdbcItemDao items = new JdbcItemDao(database);
+            JdbcMemberDao members = new JdbcMemberDao(database);
+            JdbcLoanDao loans = new JdbcLoanDao(database);
+            Clock clock = Clock.systemDefaultZone();
+
             if (options.seedDemo()) {
-                new DemoDataSeeder(new JdbcItemDao(database), new JdbcMemberDao(database),
-                        new JdbcLoanDao(database), Clock.systemDefaultZone()).seed();
+                new DemoDataSeeder(items, members, loans, clock).seed();
             }
+            AppContext.init(config, new LibraryService(items, members, loans, new PerDayFinePolicy(), clock));
         } catch (LibraryException e) {
             log.log(Level.SEVERE, "Database setup failed", e);
             System.exit(1);
         }
+
         Application.launch(LibraryApp.class, args);
     }
 }
