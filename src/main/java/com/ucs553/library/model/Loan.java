@@ -12,8 +12,9 @@ public class Loan implements Serializable {
     private final int itemId;
     private final int memberId;
     private final LocalDate issuedOn;
-    private final LocalDate dueOn;
+    private LocalDate dueOn;
     private LocalDate returnedOn;
+    private int renewCount;
 
     public Loan(int itemId, int memberId, LocalDate issuedOn, ItemType type) {
         this(0, itemId, memberId, issuedOn, issuedOn.plusDays(type.getLoanDays()), null);
@@ -33,6 +34,22 @@ public class Loan implements Serializable {
             throw new IllegalStateException("Loan is already returned");
         }
         this.returnedOn = date;
+    }
+
+    public void renew(int extraDays) {
+        if (returnedOn != null) {
+            throw new IllegalStateException("A returned loan cannot be renewed");
+        }
+        this.dueOn = dueOn.plusDays(extraDays);
+        this.renewCount++;
+    }
+
+    public int getRenewCount() {
+        return renewCount;
+    }
+
+    public void setRenewCount(int renewCount) {
+        this.renewCount = renewCount;
     }
 
     // overdue is worked out from the dates instead of being stored

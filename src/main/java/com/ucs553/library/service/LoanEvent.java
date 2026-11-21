@@ -5,6 +5,6 @@ import com.ucs553.library.model.Loan;
 public record LoanEvent(Type type, Loan loan) {
 
     public enum Type {
-        ISSUED, RETURNED
+        ISSUED, RETURNED, RENEWED
     }
 }

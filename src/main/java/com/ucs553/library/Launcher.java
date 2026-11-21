@@ -4,14 +4,15 @@ import com.ucs553.library.config.AppConfig;
 import com.ucs553.library.config.ConfigException;
 import com.ucs553.library.config.LogSetup;
 import com.ucs553.library.dao.Database;
-import com.ucs553.library.dao.JdbcItemDao;
-import com.ucs553.library.dao.JdbcLoanDao;
-import com.ucs553.library.dao.JdbcMemberDao;
+import com.ucs553.library.dao.JdbcMemberAccountDao;
 import com.ucs553.library.dao.JdbcStaffDao;
+import com.ucs553.library.dao.Repositories;
 import com.ucs553.library.exception.LibraryException;
+import com.ucs553.library.fine.FinePolicy;
 import com.ucs553.library.fine.PerDayFinePolicy;
 import com.ucs553.library.service.AuthService;
 import com.ucs553.library.service.DemoDataSeeder;
+import com.ucs553.library.service.LibraryRules;
 import com.ucs553.library.service.LibraryService;
 import javafx.application.Application;
 
@@ -58,17 +59,19 @@ public class Launcher {
                 database.initSchema();
             }
 
-            JdbcItemDao items = new JdbcItemDao(database);
-            JdbcMemberDao members = new JdbcMemberDao(database);
-            JdbcLoanDao loans = new JdbcLoanDao(database);
+            Repositories repos = Repositories.jdbc(database);
             Clock clock = Clock.systemDefaultZone();
+            FinePolicy finePolicy = new PerDayFinePolicy();
+            LibraryService service = new LibraryService(repos, finePolicy, clock, database,
+                    Session::actorName, LibraryRules.from(config));
+            AuthService auth = new AuthService(new JdbcStaffDao(database), repos.members(),
+                    new JdbcMemberAccountDao(database));
 
             if (options.seedDemo()) {
-                new DemoDataSeeder(items, members, loans, clock).seed();
+                new DemoDataSeeder(repos, service, auth, finePolicy, clock).seed();
             }
-            AuthService auth = new AuthService(new JdbcStaffDao(database));
             auth.ensureDefaultAdmin();
-            AppContext.init(config, new LibraryService(items, members, loans, new PerDayFinePolicy(), clock, database), database, auth);
+            AppContext.init(config, service, database, auth);
         } catch (LibraryException e) {
             log.log(Level.SEVERE, "Database setup failed", e);
             System.exit(1);

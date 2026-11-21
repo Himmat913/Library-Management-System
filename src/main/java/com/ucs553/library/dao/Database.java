@@ -12,6 +12,7 @@ import java.lang.reflect.Proxy;
 import java.sql.Connection;
 import java.sql.DriverManager;
 import java.sql.PreparedStatement;
+import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.sql.Statement;
 import java.util.List;
@@ -35,7 +36,8 @@ public class Database implements ConnectionSource, TransactionRunner {
                 issue_number INTEGER NOT NULL DEFAULT 0,
                 publisher TEXT NOT NULL DEFAULT '',
                 format TEXT NOT NULL DEFAULT '',
-                size_mb REAL NOT NULL DEFAULT 0
+                size_mb REAL NOT NULL DEFAULT 0,
+                category TEXT NOT NULL DEFAULT 'General'
             )""",
             """
             CREATE TABLE IF NOT EXISTS members (
@@ -52,7 +54,8 @@ public class Database implements ConnectionSource, TransactionRunner {
                 member_id INTEGER NOT NULL REFERENCES members(id),
                 issued_on TEXT NOT NULL,
                 due_on TEXT NOT NULL,
-                returned_on TEXT
+                returned_on TEXT,
+                renew_count INTEGER NOT NULL DEFAULT 0
             )""",
             """
             CREATE TABLE IF NOT EXISTS staff (
@@ -63,6 +66,50 @@ public class Database implements ConnectionSource, TransactionRunner {
                 password_hash TEXT NOT NULL,
                 role TEXT NOT NULL CHECK (role IN ('ADMIN', 'LIBRARIAN'))
             )""",
+            """
+            CREATE TABLE IF NOT EXISTS reservations (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                item_id INTEGER NOT NULL REFERENCES items(id) ON DELETE CASCADE,
+                member_id INTEGER NOT NULL REFERENCES members(id) ON DELETE CASCADE,
+                reserved_on TEXT NOT NULL,
+                status TEXT NOT NULL CHECK (status IN ('WAITING', 'READY', 'FULFILLED', 'CANCELLED', 'EXPIRED')),
+                hold_until TEXT
+            )""",
+            """
+            CREATE TABLE IF NOT EXISTS fines (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                loan_id INTEGER NOT NULL REFERENCES loans(id),
+                member_id INTEGER NOT NULL REFERENCES members(id),
+                amount TEXT NOT NULL,
+                created_on TEXT NOT NULL,
+                paid_on TEXT
+            )""",
+            """
+            CREATE TABLE IF NOT EXISTS audit_log (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                at TEXT NOT NULL,
+                actor TEXT NOT NULL,
+                action TEXT NOT NULL,
+                details TEXT NOT NULL
+            )""",
+            """
+            CREATE TABLE IF NOT EXISTS notifications (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                member_id INTEGER NOT NULL REFERENCES members(id) ON DELETE CASCADE,
+                message TEXT NOT NULL,
+                created_at TEXT NOT NULL,
+                is_read INTEGER NOT NULL DEFAULT 0
+            )""",
+            """
+            CREATE TABLE IF NOT EXISTS member_accounts (
+                member_id INTEGER PRIMARY KEY REFERENCES members(id) ON DELETE CASCADE,
+                password_hash TEXT NOT NULL,
+                must_change INTEGER NOT NULL DEFAULT 0
+            )""",
+            "CREATE INDEX IF NOT EXISTS idx_reservations_item ON reservations(item_id, status)",
+            "CREATE INDEX IF NOT EXISTS idx_reservations_member ON reservations(member_id)",
+            "CREATE INDEX IF NOT EXISTS idx_fines_member ON fines(member_id)",
+            "CREATE INDEX IF NOT EXISTS idx_notifications_member ON notifications(member_id)",
             "CREATE INDEX IF NOT EXISTS idx_loans_member ON loans(member_id)",
             "CREATE INDEX IF NOT EXISTS idx_loans_item ON loans(item_id)");
 
@@ -133,10 +180,40 @@ public class Database implements ConnectionSource, TransactionRunner {
 
     public void initSchema() throws DataAccessException {
         run(CREATE);
+        addMissingColumns();
+    }
+
+    // databases created before reservations existed lack these two columns
+    private void addMissingColumns() throws DataAccessException {
+        try (Connection c = getConnection()) {
+            addColumnIfMissing(c, "items", "category", "TEXT NOT NULL DEFAULT 'General'");
+            addColumnIfMissing(c, "loans", "renew_count", "INTEGER NOT NULL DEFAULT 0");
+        } catch (SQLException e) {
+            throw new DataAccessException("Could not update the database structure", e);
+        }
+    }
+
+    private void addColumnIfMissing(Connection c, String table, String column, String definition) throws SQLException {
+        boolean found = false;
+        try (Statement st = c.createStatement(); ResultSet rs = st.executeQuery("PRAGMA table_info(" + table + ")")) {
+            while (rs.next()) {
+                if (column.equalsIgnoreCase(rs.getString("name"))) {
+                    found = true;
+                }
+            }
+        }
+        if (!found) {
+            try (Statement st = c.createStatement()) {
+                st.execute("ALTER TABLE " + table + " ADD COLUMN " + column + " " + definition);
+            }
+        }
     }
 
     public void resetSchema() throws DataAccessException {
-        run(List.of("DROP TABLE IF EXISTS staff", "DROP TABLE IF EXISTS loans", "DROP TABLE IF EXISTS members", "DROP TABLE IF EXISTS items"));
+        run(List.of("DROP TABLE IF EXISTS notifications", "DROP TABLE IF EXISTS member_accounts",
+                "DROP TABLE IF EXISTS audit_log", "DROP TABLE IF EXISTS fines", "DROP TABLE IF EXISTS reservations",
+                "DROP TABLE IF EXISTS staff", "DROP TABLE IF EXISTS loans", "DROP TABLE IF EXISTS members",
+                "DROP TABLE IF EXISTS items"));
         initSchema();
     }
 

@@ -40,19 +40,21 @@ public class JdbcLoanDao extends AbstractJdbcDao<Loan> implements LoanDao {
     @Override
     protected Loan mapRow(ResultSet rs) throws SQLException {
         String returned = rs.getString("returned_on");
-        return new Loan(rs.getInt("id"), rs.getInt("item_id"), rs.getInt("member_id"),
+        Loan loan = new Loan(rs.getInt("id"), rs.getInt("item_id"), rs.getInt("member_id"),
                 LocalDate.parse(rs.getString("issued_on")), LocalDate.parse(rs.getString("due_on")),
                 returned == null ? null : LocalDate.parse(returned));
+        loan.setRenewCount(rs.getInt("renew_count"));
+        return loan;
     }
 
     @Override
     protected String insertSql() {
-        return "INSERT INTO loans (item_id, member_id, issued_on, due_on, returned_on) VALUES (?,?,?,?,?)";
+        return "INSERT INTO loans (item_id, member_id, issued_on, due_on, returned_on, renew_count) VALUES (?,?,?,?,?,?)";
     }
 
     @Override
     protected String updateSql() {
-        return "UPDATE loans SET item_id=?, member_id=?, issued_on=?, due_on=?, returned_on=? WHERE id=?";
+        return "UPDATE loans SET item_id=?, member_id=?, issued_on=?, due_on=?, returned_on=?, renew_count=? WHERE id=?";
     }
 
     @Override
@@ -63,7 +65,7 @@ public class JdbcLoanDao extends AbstractJdbcDao<Loan> implements LoanDao {
     @Override
     protected void bindUpdate(PreparedStatement ps, Loan loan) throws SQLException {
         bindColumns(ps, loan);
-        ps.setInt(6, loan.getId());
+        ps.setInt(7, loan.getId());
     }
 
     private void bindColumns(PreparedStatement ps, Loan loan) throws SQLException {
@@ -72,6 +74,7 @@ public class JdbcLoanDao extends AbstractJdbcDao<Loan> implements LoanDao {
         ps.setString(3, loan.getIssuedOn().toString());
         ps.setString(4, loan.getDueOn().toString());
         ps.setString(5, loan.getReturnedOn() == null ? null : loan.getReturnedOn().toString());
+        ps.setInt(6, loan.getRenewCount());
     }
 
     @Override

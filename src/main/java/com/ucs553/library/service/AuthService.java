@@ -1,11 +1,16 @@
 package com.ucs553.library.service;
 
 import com.ucs553.library.dao.DataAccessException;
+import com.ucs553.library.dao.MemberAccountDao;
+import com.ucs553.library.dao.MemberDao;
 import com.ucs553.library.dao.StaffDao;
 import com.ucs553.library.exception.LibraryException;
+import com.ucs553.library.model.Member;
+import com.ucs553.library.model.MemberAccount;
 import com.ucs553.library.model.Role;
 import com.ucs553.library.model.Staff;
 
+import java.security.SecureRandom;
 import java.util.List;
 import java.util.Optional;
 import java.util.logging.Logger;
@@ -18,10 +23,22 @@ public class AuthService {
     private static final String DEFAULT_PASSWORD = "admin123";
     private static final String DUMMY_HASH = PasswordHasher.hash("not-a-real-password".toCharArray());
 
+    private static final String TEMP_ALPHABET = "abcdefghjkmnpqrstuvwxyzACDEFGHJKLMNPQRSTUVWXYZ23456789";
+    private static final int TEMP_LENGTH = 8;
+
     private final StaffDao staff;
+    private final MemberDao members;
+    private final MemberAccountDao accounts;
+    private final SecureRandom random = new SecureRandom();
 
     public AuthService(StaffDao staff) {
+        this(staff, null, null);
+    }
+
+    public AuthService(StaffDao staff, MemberDao members, MemberAccountDao accounts) {
         this.staff = staff;
+        this.members = members;
+        this.accounts = accounts;
     }
 
     public boolean ensureDefaultAdmin() throws LibraryException {
@@ -104,6 +121,71 @@ public class AuthService {
         }
         staff.delete(id);
         LOG.info("Staff account " + target.getUsername() + " deleted by " + actor.getUsername());
+    }
+
+    public Optional<MemberLogin> loginMember(String email, char[] password) throws DataAccessException {
+        if (members == null || accounts == null) {
+            return Optional.empty();
+        }
+        Optional<Member> member = members.findByEmail(email == null ? "" : email.trim());
+        Optional<MemberAccount> account = member.isPresent() ? accounts.find(member.get().getId()) : Optional.empty();
+        if (account.isPresent() && PasswordHasher.verify(password, account.get().passwordHash())) {
+            LOG.info(member.get().getEmail() + " signed in");
+            return Optional.of(new MemberLogin(member.get(), account.get().mustChange()));
+        }
+        if (account.isEmpty()) {
+            PasswordHasher.verify(password, DUMMY_HASH);
+        }
+        LOG.warning("Failed sign in for \"" + email + "\"");
+        return Optional.empty();
+    }
+
+    public boolean hasAccount(int memberId) throws DataAccessException {
+        return accounts != null && accounts.find(memberId).isPresent();
+    }
+
+    public java.util.Set<Integer> membersWithAccounts() throws DataAccessException {
+        return accounts == null ? java.util.Set.of() : accounts.memberIdsWithAccounts();
+    }
+
+    // returns the temporary password, which is shown once and has to be changed at the first sign in
+    public String createOrResetMemberAccount(int memberId) throws LibraryException {
+        requireMemberSupport();
+        members.findById(memberId).orElseThrow(() -> new com.ucs553.library.exception.NotFoundException("Member", memberId));
+        String temporary = temporaryPassword();
+        accounts.save(new MemberAccount(memberId, PasswordHasher.hash(temporary.toCharArray()), true));
+        return temporary;
+    }
+
+    public void setMemberPassword(int memberId, String passwordHash, boolean mustChange) throws LibraryException {
+        requireMemberSupport();
+        accounts.save(new MemberAccount(memberId, passwordHash, mustChange));
+    }
+
+    public void changeMemberPassword(Member member, char[] oldPassword, char[] newPassword) throws LibraryException {
+        requireMemberSupport();
+        MemberAccount account = accounts.find(member.getId())
+                .orElseThrow(() -> new LibraryException("This member has no account"));
+        if (!PasswordHasher.verify(oldPassword, account.passwordHash())) {
+            throw new LibraryException("The current password is wrong");
+        }
+        checkPassword(newPassword);
+        accounts.save(new MemberAccount(member.getId(), PasswordHasher.hash(newPassword), false));
+        LOG.info(member.getEmail() + " changed their password");
+    }
+
+    private String temporaryPassword() {
+        StringBuilder text = new StringBuilder();
+        for (int i = 0; i < TEMP_LENGTH; i++) {
+            text.append(TEMP_ALPHABET.charAt(random.nextInt(TEMP_ALPHABET.length())));
+        }
+        return text.toString();
+    }
+
+    private void requireMemberSupport() throws LibraryException {
+        if (members == null || accounts == null) {
+            throw new LibraryException("Member accounts are not available");
+        }
     }
 
     private void checkPassword(char[] password) throws LibraryException {

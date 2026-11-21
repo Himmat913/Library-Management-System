@@ -20,10 +20,11 @@ public class JdbcItemDao extends AbstractJdbcDao<Item> implements ItemDao {
     @Override
     public List<Item> search(String text) throws DataAccessException {
         String like = "%" + text.trim().toLowerCase() + "%";
-        return query("SELECT * FROM items WHERE LOWER(title) LIKE ? OR LOWER(author) LIKE ? ORDER BY title",
+        return query("SELECT * FROM items WHERE LOWER(title) LIKE ? OR LOWER(author) LIKE ? OR LOWER(category) LIKE ? ORDER BY title",
                 ps -> {
                     ps.setString(1, like);
                     ps.setString(2, like);
+                    ps.setString(3, like);
                 }, this::mapRow);
     }
 
@@ -43,6 +44,7 @@ public class JdbcItemDao extends AbstractJdbcDao<Item> implements ItemDao {
             case DIGITAL -> new DigitalResource(title, author, year, copies,
                     rs.getString("format"), rs.getDouble("size_mb"));
         };
+        item.setCategory(rs.getString("category"));
         item.setId(rs.getInt("id"));
         item.restoreAvailableCopies(rs.getInt("available_copies"));
         return item;
@@ -51,13 +53,13 @@ public class JdbcItemDao extends AbstractJdbcDao<Item> implements ItemDao {
     @Override
     protected String insertSql() {
         return "INSERT INTO items (type, title, author, year, total_copies, available_copies, "
-                + "isbn, pages, issue_number, publisher, format, size_mb) VALUES (?,?,?,?,?,?,?,?,?,?,?,?)";
+                + "isbn, pages, issue_number, publisher, format, size_mb, category) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?)";
     }
 
     @Override
     protected String updateSql() {
         return "UPDATE items SET type=?, title=?, author=?, year=?, total_copies=?, available_copies=?, "
-                + "isbn=?, pages=?, issue_number=?, publisher=?, format=?, size_mb=? WHERE id=?";
+                + "isbn=?, pages=?, issue_number=?, publisher=?, format=?, size_mb=?, category=? WHERE id=?";
     }
 
     @Override
@@ -68,7 +70,7 @@ public class JdbcItemDao extends AbstractJdbcDao<Item> implements ItemDao {
     @Override
     protected void bindUpdate(PreparedStatement ps, Item item) throws SQLException {
         bindColumns(ps, item);
-        ps.setInt(13, item.getId());
+        ps.setInt(14, item.getId());
     }
 
     private void bindColumns(PreparedStatement ps, Item item) throws SQLException {
@@ -101,6 +103,7 @@ public class JdbcItemDao extends AbstractJdbcDao<Item> implements ItemDao {
         ps.setString(10, publisher);
         ps.setString(11, format);
         ps.setDouble(12, sizeMb);
+        ps.setString(13, item.getCategory());
     }
 
     @Override

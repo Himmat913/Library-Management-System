@@ -8,6 +8,7 @@ import java.util.Objects;
 public abstract class Item implements Borrowable, Comparable<Item>, Serializable {
 
     private static final long serialVersionUID = 1L;
+    public static final String DEFAULT_CATEGORY = "General";
 
     private int id;
     private final String title;
@@ -15,6 +16,7 @@ public abstract class Item implements Borrowable, Comparable<Item>, Serializable
     private final int year;
     private final int totalCopies;
     private int availableCopies;
+    private String category = DEFAULT_CATEGORY;
 
     protected Item(String title, String author, int year, int totalCopies) {
         if (title == null || title.isBlank()) {
@@ -81,6 +83,14 @@ public abstract class Item implements Borrowable, Comparable<Item>, Serializable
 
     public int getAvailableCopies() {
         return availableCopies;
+    }
+
+    public String getCategory() {
+        return category;
+    }
+
+    public void setCategory(String category) {
+        this.category = category == null || category.isBlank() ? DEFAULT_CATEGORY : category.trim();
     }
 
     // used when loading a saved item back from the database

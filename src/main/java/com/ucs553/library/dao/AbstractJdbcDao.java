@@ -109,7 +109,7 @@ public abstract class AbstractJdbcDao<T> implements Dao<T> {
         return query(sql, binder, rs -> rs.getInt(1)).get(0);
     }
 
-    private int execute(String sql, Binder binder) throws DataAccessException {
+    protected int execute(String sql, Binder binder) throws DataAccessException {
         try (Connection c = source.getConnection(); PreparedStatement ps = c.prepareStatement(sql)) {
             binder.bind(ps);
             return ps.executeUpdate();

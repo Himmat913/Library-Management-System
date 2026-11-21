@@ -44,6 +44,9 @@ public final class AppConfig {
         d.setProperty("backup.dir", "data/backups");
         d.setProperty("export.dir", "data/exports");
         d.setProperty("settings.file", "data/settings.ser");
+        d.setProperty("reservation.holdDays", "3");
+        d.setProperty("loan.maxRenewals", "1");
+        d.setProperty("fine.blockLimit", "100");
         return d;
     }
 

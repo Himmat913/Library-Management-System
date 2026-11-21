@@ -4,8 +4,8 @@ import com.ucs553.library.dao.Database;
 import com.ucs553.library.dao.JdbcItemDao;
 import com.ucs553.library.dao.JdbcLoanDao;
 import com.ucs553.library.dao.JdbcMemberDao;
-import com.ucs553.library.fine.PerDayFinePolicy;
 import com.ucs553.library.service.LibraryService;
+import com.ucs553.library.service.TestServices;
 
 import java.nio.file.Path;
 import java.time.Clock;
@@ -29,6 +29,6 @@ final class Fixture {
 
     LibraryService on(LocalDate day) {
         Clock clock = Clock.fixed(day.atStartOfDay().toInstant(ZoneOffset.UTC), ZoneOffset.UTC);
-        return new LibraryService(items, members, loans, new PerDayFinePolicy(), clock, db);
+        return TestServices.create(db, clock);
     }
 }
