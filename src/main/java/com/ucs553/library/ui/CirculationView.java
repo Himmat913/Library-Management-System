@@ -162,11 +162,15 @@ public class CirculationView extends BorderPane implements Refreshable {
         }, table.getSelectionModel().selectedItemProperty()));
         giveBack.setOnAction(e -> returnSelected());
 
+        Button renew = new Button("Renew selected");
+        renew.disableProperty().bind(giveBack.disableProperty());
+        renew.setOnAction(e -> renewSelected());
+
         summary.getStyleClass().add("muted");
         Region spacer = new Region();
         HBox.setHgrow(spacer, Priority.ALWAYS);
         finesOnly.selectedProperty().addListener((obs, was, now) -> applyFilter());
-        HBox bar = new HBox(16, segments, finesOnly, summary, spacer, giveBack);
+        HBox bar = new HBox(16, segments, finesOnly, summary, spacer, renew, giveBack);
         bar.setAlignment(Pos.CENTER_LEFT);
         return bar;
     }
@@ -194,7 +198,11 @@ public class CirculationView extends BorderPane implements Refreshable {
         } catch (LibraryException e) {
             LOG.log(Level.WARNING, "Could not describe the loan event", e);
         }
-        String verb = event.type() == LoanEvent.Type.ISSUED ? " borrowed " : " returned ";
+        String verb = switch (event.type()) {
+            case ISSUED -> " borrowed ";
+            case RENEWED -> " renewed ";
+            case RETURNED -> " returned ";
+        };
         recent.addFirst(who + verb + title);
 
         int seen = 0;
@@ -338,13 +346,35 @@ public class CirculationView extends BorderPane implements Refreshable {
         }
         try {
             ReturnResult result = service.returnLoan(row.loan().getId());
+            StringBuilder message = new StringBuilder("Returned \"" + row.title() + "\".");
             if (result.hasFine()) {
-                Dialogs.info(window(), "Returned \"" + row.title() + "\".\nFine to collect: ₹" + result.fine());
+                message.append("\nFine charged: ₹").append(result.fine());
+            }
+            if (result.hasNextInQueue()) {
+                message.append("\nThe copy is now held for ").append(result.nextInQueue()).append(", who was next in the queue.");
+            }
+            if (result.hasFine() || result.hasNextInQueue()) {
+                Dialogs.info(window(), message.toString());
             } else {
                 status.set("Returned \"" + row.title() + "\", no fine");
             }
         } catch (DataAccessException e) {
             fail("Could not return the loan", e);
+        } catch (LibraryException e) {
+            fail(e.getMessage(), e);
+        }
+    }
+
+    private void renewSelected() {
+        LoanRow row = table.getSelectionModel().getSelectedItem();
+        if (row == null) {
+            return;
+        }
+        try {
+            Loan loan = service.renew(row.loan().getId());
+            status.set("Renewed \"" + row.title() + "\", now due " + DATE.format(loan.getDueOn()));
+        } catch (DataAccessException e) {
+            fail("Could not renew the loan", e);
         } catch (LibraryException e) {
             fail(e.getMessage(), e);
         }

@@ -7,10 +7,15 @@ import com.ucs553.library.exception.LibraryException;
 import com.ucs553.library.io.DataExporter;
 import com.ucs553.library.io.DataImporter;
 import com.ucs553.library.io.ImportResult;
+import com.ucs553.library.service.FineDetail;
+import com.ucs553.library.service.PopularItem;
 import javafx.beans.property.StringProperty;
 import javafx.geometry.Insets;
 import javafx.scene.control.Button;
 import javafx.scene.control.Label;
+import javafx.scene.control.ToggleButton;
+import javafx.scene.control.ToggleGroup;
+import javafx.scene.layout.HBox;
 import javafx.scene.control.TextArea;
 import javafx.scene.layout.BorderPane;
 import javafx.scene.layout.Priority;
@@ -20,6 +25,8 @@ import javafx.stage.Window;
 
 import java.io.File;
 import java.io.IOException;
+import java.math.BigDecimal;
+import java.nio.file.Files;
 import java.nio.file.Path;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
@@ -33,6 +40,16 @@ public class ReportsView extends BorderPane implements Refreshable {
         void run(Path file) throws IOException, LibraryException;
     }
 
+    private enum Report {
+        OVERDUE("Overdue"), POPULAR("Most borrowed"), FINES("Outstanding fines");
+
+        private final String label;
+
+        Report(String label) {
+            this.label = label;
+        }
+    }
+
     private static final Logger LOG = Logger.getLogger(ReportsView.class.getName());
     private static final DateTimeFormatter STAMP = DateTimeFormatter.ofPattern("yyyyMMdd-HHmmss");
 
@@ -41,6 +58,8 @@ public class ReportsView extends BorderPane implements Refreshable {
     private final DataImporter importer = new DataImporter(context.service());
     private final StringProperty status;
     private final TextArea preview = new TextArea();
+    private final Label previewTitle = heading("Overdue report");
+    private Report shown = Report.OVERDUE;
 
     public ReportsView(StringProperty status) {
         this.status = status;
@@ -67,11 +86,37 @@ public class ReportsView extends BorderPane implements Refreshable {
         }
         setLeft(actions);
 
-        Label previewTitle = heading("Overdue report preview");
+        ToggleGroup group = new ToggleGroup();
+        HBox segments = new HBox();
+        for (Report report : Report.values()) {
+            ToggleButton button = new ToggleButton(report.label);
+            button.setToggleGroup(group);
+            button.getStyleClass().add("segment");
+            button.selectedProperty().addListener((obs, was, now) -> {
+                if (now) {
+                    shown = report;
+                    refresh();
+                }
+            });
+            segments.getChildren().add(button);
+            if (report == Report.OVERDUE) {
+                button.setSelected(true);
+            }
+        }
+        group.selectedToggleProperty().addListener((obs, old, now) -> {
+            if (now == null && old != null) {
+                old.setSelected(true);
+            }
+        });
+        Button save = new Button("Save this report");
+        save.setOnAction(e -> exportTo("Save report", "report.txt", "Text files", "txt", this::saveShown));
+
         preview.setEditable(false);
         preview.setStyle("-fx-font-family: Consolas, monospace; -fx-font-size: 13px;");
         VBox.setVgrow(preview, Priority.ALWAYS);
-        setCenter(new VBox(8, previewTitle, preview));
+        HBox top = new HBox(16, segments, save);
+        setCenter(new VBox(8, Pages.header("Reports", "Overdue items, popular items and unpaid fines. Export raw data on the left."),
+                top, previewTitle, preview));
     }
 
     private Label heading(String text) {
@@ -91,11 +136,44 @@ public class ReportsView extends BorderPane implements Refreshable {
     @Override
     public void refresh() {
         try {
-            preview.setText(exporter.overdueReport());
+            previewTitle.setText(shown.label);
+            preview.setText(switch (shown) {
+                case OVERDUE -> exporter.overdueReport();
+                case POPULAR -> popularReport();
+                case FINES -> finesReport();
+            });
             status.set("Reports");
         } catch (LibraryException e) {
             fail("Could not build the report", e);
         }
+    }
+
+    private String popularReport() throws LibraryException {
+        StringBuilder text = new StringBuilder("Most borrowed items\n\n");
+        int rank = 1;
+        for (PopularItem item : context.service().mostBorrowed(15)) {
+            text.append(String.format("%2d. %-45s %-25s %d loans%n", rank++, item.title(), item.author(), item.loans()));
+        }
+        if (rank == 1) {
+            text.append("No loans yet.\n");
+        }
+        return text.toString();
+    }
+
+    private String finesReport() throws LibraryException {
+        StringBuilder text = new StringBuilder("Outstanding fines\n\n");
+        BigDecimal total = BigDecimal.ZERO;
+        for (FineDetail detail : context.service().fineDetails(true)) {
+            text.append(String.format("%-24s %-40s %10s   charged %s%n", detail.memberName(), detail.itemTitle(),
+                    Pages.rupees(detail.fine().getAmount()), Pages.DATE.format(detail.fine().getCreatedOn())));
+            total = total.add(detail.fine().getAmount());
+        }
+        text.append("\nTotal outstanding: ").append(Pages.rupees(total)).append("\n");
+        return text.toString();
+    }
+
+    private void saveShown(Path file) throws IOException {
+        Files.writeString(file, preview.getText());
     }
 
     private void exportTo(String title, String fileName, String description, String extension, FileAction action) {

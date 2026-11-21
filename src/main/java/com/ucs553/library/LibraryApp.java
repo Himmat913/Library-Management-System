@@ -2,9 +2,14 @@ package com.ucs553.library;
 
 import com.ucs553.library.config.SettingsStore;
 import com.ucs553.library.config.UserSettings;
+import com.ucs553.library.model.Member;
 import com.ucs553.library.model.Staff;
+import com.ucs553.library.service.MemberLogin;
+import com.ucs553.library.service.MemberPortal;
 import com.ucs553.library.ui.LoginView;
 import com.ucs553.library.ui.MainView;
+import com.ucs553.library.ui.MemberMainView;
+import com.ucs553.library.ui.MemberSignIn;
 import javafx.application.Application;
 import javafx.scene.Scene;
 import javafx.scene.layout.Region;
@@ -43,13 +48,24 @@ public class LibraryApp extends Application {
 
     private void showLogin() {
         Session.clear();
-        scene.setRoot(new LoginView(name, context.auth(), settings.getLastUsername(), this::showMain));
+        scene.setRoot(new LoginView(name, context.auth(), settings.getLastUsername(), this::showMain, this::showMember));
     }
 
     private void showMain(Staff user) {
         Session.set(user);
         settings.setLastUsername(user.getUsername());
         scene.setRoot(new MainView(name, context.service(), context.auth(), user, settings, this::showLogin));
+    }
+
+    private void showMember(MemberLogin login) {
+        Member member = login.member();
+        Session.setMember(member);
+        if (login.mustChangePassword() && !MemberSignIn.completeFirstLogin(scene.getWindow(), context.auth(), member)) {
+            showLogin();
+            return;
+        }
+        MemberPortal portal = new MemberPortal(context.service(), member);
+        scene.setRoot(new MemberMainView(name, portal, context.auth(), this::showLogin));
     }
 
     @Override

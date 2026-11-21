@@ -18,6 +18,8 @@ import javafx.scene.layout.GridPane;
 import javafx.scene.layout.VBox;
 import javafx.stage.Window;
 
+import java.util.List;
+
 class ItemDialog extends Dialog<Item> {
 
     private final Item existing;
@@ -26,6 +28,7 @@ class ItemDialog extends Dialog<Item> {
     private final TextField author = new TextField();
     private final TextField year = new TextField();
     private final TextField copies = new TextField("1");
+    private final ComboBox<String> category = new ComboBox<>();
     private final TextField isbn = new TextField();
     private final TextField pages = new TextField();
     private final TextField issue = new TextField();
@@ -35,7 +38,7 @@ class ItemDialog extends Dialog<Item> {
     private final Label error = new Label();
     private Item result;
 
-    ItemDialog(Window owner, Item existing) {
+    ItemDialog(Window owner, Item existing, List<String> categories) {
         this.existing = existing;
         initOwner(owner);
         setTitle(existing == null ? "Add item" : "Edit item");
@@ -47,6 +50,11 @@ class ItemDialog extends Dialog<Item> {
         addRow(common, 2, "Author", author);
         addRow(common, 3, "Year", year);
         addRow(common, 4, "Copies", copies);
+        category.setEditable(true);
+        category.setPrefWidth(280);
+        category.getItems().setAll(categories);
+        category.setValue(Item.DEFAULT_CATEGORY);
+        addRow(common, 5, "Category", category);
 
         GridPane bookPane = grid();
         addRow(bookPane, 0, "ISBN", isbn);
@@ -97,6 +105,7 @@ class ItemDialog extends Dialog<Item> {
         author.setText(item.getAuthor());
         year.setText(String.valueOf(item.getYear()));
         copies.setText(String.valueOf(item.getTotalCopies()));
+        category.setValue(item.getCategory());
         if (item instanceof Book b) {
             isbn.setText(b.getIsbn());
             pages.setText(String.valueOf(b.getPages()));
@@ -129,6 +138,8 @@ class ItemDialog extends Dialog<Item> {
             case DIGITAL -> new DigitalResource(itemTitle, itemAuthor, itemYear, total,
                     format.getText(), optionalDecimal(size, "Size"));
         };
+
+        item.setCategory(category.getEditor().getText());
 
         if (existing != null) {
             int onLoan = existing.getTotalCopies() - existing.getAvailableCopies();

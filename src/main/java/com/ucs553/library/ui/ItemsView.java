@@ -3,7 +3,9 @@ package com.ucs553.library.ui;
 import com.ucs553.library.Session;
 import com.ucs553.library.exception.LibraryException;
 import com.ucs553.library.model.Item;
+import com.ucs553.library.model.Member;
 import com.ucs553.library.service.LibraryService;
+import javafx.beans.binding.Bindings;
 import javafx.beans.property.ReadOnlyObjectWrapper;
 import javafx.beans.property.ReadOnlyStringWrapper;
 import javafx.beans.property.StringProperty;
@@ -13,6 +15,8 @@ import javafx.collections.transformation.FilteredList;
 import javafx.collections.transformation.SortedList;
 import javafx.geometry.Insets;
 import javafx.scene.control.Button;
+import javafx.scene.control.ChoiceDialog;
+import javafx.scene.control.ComboBox;
 import javafx.scene.control.Label;
 import javafx.scene.control.TableColumn;
 import javafx.scene.control.TableRow;
@@ -24,6 +28,7 @@ import javafx.scene.layout.Priority;
 import javafx.scene.layout.Region;
 import javafx.stage.Window;
 
+import java.util.List;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
@@ -37,6 +42,7 @@ public class ItemsView extends BorderPane implements Refreshable {
     private final FilteredList<Item> filtered = new FilteredList<>(data, i -> true);
     private final TableView<Item> table = new TableView<>();
     private final TextField search = new TextField();
+    private final ComboBox<String> categoryFilter = new ComboBox<>();
     private final Label details = new Label();
 
     public ItemsView(LibraryService service, StringProperty status) {
@@ -44,8 +50,21 @@ public class ItemsView extends BorderPane implements Refreshable {
         this.status = status;
         setPadding(new Insets(16));
 
-        search.setPromptText("Search by title, author or type");
+        search.setPromptText("Search by title, author, type or category");
         search.setPrefWidth(300);
+        categoryFilter.setPromptText("All categories");
+        categoryFilter.setPrefWidth(170);
+        Button clear = new Button("Clear");
+        clear.setOnAction(e -> {
+            search.clear();
+            categoryFilter.setValue(null);
+        });
+        Button reserve = new Button("Reserve for member");
+        reserve.disableProperty().bind(Bindings.createBooleanBinding(() -> {
+            Item selected = table.getSelectionModel().getSelectedItem();
+            return selected == null || selected.isAvailable();
+        }, table.getSelectionModel().selectedItemProperty()));
+        reserve.setOnAction(e -> reserveSelected());
         Button add = new Button("Add item");
         Button edit = new Button("Edit");
         Button delete = new Button("Delete");
@@ -60,7 +79,7 @@ public class ItemsView extends BorderPane implements Refreshable {
 
         Region spacer = new Region();
         HBox.setHgrow(spacer, Priority.ALWAYS);
-        HBox toolbar = new HBox(8, search, spacer, add, edit, delete);
+        HBox toolbar = new HBox(8, search, categoryFilter, clear, spacer, reserve, add, edit, delete);
         toolbar.setPadding(new Insets(0, 0, 12, 0));
         setTop(toolbar);
 
@@ -71,16 +90,22 @@ public class ItemsView extends BorderPane implements Refreshable {
         details.setPadding(new Insets(10, 0, 0, 0));
         setBottom(details);
 
-        search.textProperty().addListener((obs, old, text) -> {
-            String q = text.trim().toLowerCase();
-            filtered.setPredicate(i -> q.isEmpty()
-                    || i.getTitle().toLowerCase().contains(q)
-                    || i.getAuthor().toLowerCase().contains(q)
-                    || i.getType().toString().toLowerCase().contains(q));
-            updateStatus();
-        });
+        search.textProperty().addListener((obs, old, text) -> applyFilter());
+        categoryFilter.valueProperty().addListener((obs, old, now) -> applyFilter());
         table.getSelectionModel().selectedItemProperty().addListener((obs, old, item) ->
                 details.setText(item == null ? "" : item.describe()));
+    }
+
+    private void applyFilter() {
+        String q = search.getText().trim().toLowerCase();
+        String category = categoryFilter.getValue();
+        filtered.setPredicate(i -> (q.isEmpty()
+                || i.getTitle().toLowerCase().contains(q)
+                || i.getAuthor().toLowerCase().contains(q)
+                || i.getCategory().toLowerCase().contains(q)
+                || i.getType().toString().toLowerCase().contains(q))
+                && (category == null || i.getCategory().equalsIgnoreCase(category)));
+        updateStatus();
     }
 
     private void buildTable() {
@@ -91,6 +116,10 @@ public class ItemsView extends BorderPane implements Refreshable {
         TableColumn<Item, String> title = new TableColumn<>("Title");
         title.setCellValueFactory(c -> new ReadOnlyStringWrapper(c.getValue().getTitle()));
         title.setPrefWidth(320);
+
+        TableColumn<Item, String> category = new TableColumn<>("Category");
+        category.setCellValueFactory(c -> new ReadOnlyStringWrapper(c.getValue().getCategory()));
+        category.setPrefWidth(130);
 
         TableColumn<Item, String> author = new TableColumn<>("Author");
         author.setCellValueFactory(c -> new ReadOnlyStringWrapper(c.getValue().getAuthor()));
@@ -107,6 +136,7 @@ public class ItemsView extends BorderPane implements Refreshable {
 
         table.getColumns().add(type);
         table.getColumns().add(title);
+        table.getColumns().add(category);
         table.getColumns().add(author);
         table.getColumns().add(year);
         table.getColumns().add(copies);
@@ -142,6 +172,9 @@ public class ItemsView extends BorderPane implements Refreshable {
     public void refresh() {
         try {
             data.setAll(service.allItems());
+            String kept = categoryFilter.getValue();
+            categoryFilter.getItems().setAll(service.categories());
+            categoryFilter.setValue(categoryFilter.getItems().contains(kept) ? kept : null);
             updateStatus();
         } catch (LibraryException e) {
             fail("Could not load the items", e);
@@ -153,13 +186,42 @@ public class ItemsView extends BorderPane implements Refreshable {
     }
 
     private void addItem() {
-        new ItemDialog(window(), null).showAndWait().ifPresent(this::save);
+        new ItemDialog(window(), null, categories()).showAndWait().ifPresent(this::save);
     }
 
     private void editSelected() {
         Item selected = table.getSelectionModel().getSelectedItem();
         if (selected != null) {
-            new ItemDialog(window(), selected).showAndWait().ifPresent(this::save);
+            new ItemDialog(window(), selected, categories()).showAndWait().ifPresent(this::save);
+        }
+    }
+
+    private List<String> categories() {
+        return List.copyOf(categoryFilter.getItems());
+    }
+
+    private void reserveSelected() {
+        Item selected = table.getSelectionModel().getSelectedItem();
+        if (selected == null) {
+            return;
+        }
+        try {
+            List<Member> members = service.allMembers().stream().sorted().toList();
+            ChoiceDialog<Member> dialog = new ChoiceDialog<>(null, members);
+            dialog.initOwner(window());
+            dialog.setTitle("Reserve");
+            dialog.setHeaderText(null);
+            dialog.setContentText("Reserve \"" + selected.getTitle() + "\" for:");
+            dialog.showAndWait().ifPresent(member -> {
+                try {
+                    service.reserve(selected.getId(), member.getId());
+                    status.set(member.getName() + " is now in the queue for \"" + selected.getTitle() + "\"");
+                } catch (LibraryException e) {
+                    fail(e.getMessage(), e);
+                }
+            });
+        } catch (LibraryException e) {
+            fail("Could not load the members", e);
         }
     }
 

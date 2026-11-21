@@ -65,11 +65,16 @@ public class MainView extends BorderPane {
             }
         });
 
+        addPage("Dashboard", new DashboardView(service, status, this::open));
         addPage("Circulation", new CirculationView(service, status));
         addPage("Items", new ItemsView(service, status));
         addPage("Members", new MembersView(service, status));
+        addPage("Reservations", new ReservationsView(service, status));
+        addPage("Fines", new FinesView(service, status));
+        addPage("Activity", new ActivityView(service, status));
         addPage("Reports", new ReportsView(status));
         if (user.isAdmin()) {
+            addPage("Logins", new AccountsView(service, auth, status));
             addPage("Staff", new StaffView(auth, status));
         }
         ToggleButton wanted = pages.get(wantedPage);
@@ -88,6 +93,13 @@ public class MainView extends BorderPane {
         signOut.setMaxWidth(Double.MAX_VALUE);
         signOut.setOnAction(e -> onSignOut.run());
         sidebar.getChildren().addAll(spacer, who, password, signOut);
+    }
+
+    private void open(String page) {
+        ToggleButton button = pages.get(page);
+        if (button != null) {
+            button.setSelected(true);
+        }
     }
 
     private <V extends Region & Refreshable> void addPage(String name, V view) {

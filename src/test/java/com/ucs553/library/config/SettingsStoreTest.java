@@ -46,14 +46,14 @@ class SettingsStoreTest {
     void missingFileGivesDefaults() {
         UserSettings loaded = new SettingsStore(dir.resolve("none.ser")).load();
         assertEquals(UserSettings.DEFAULT_WIDTH, loaded.getWindowWidth());
-        assertEquals("Circulation", loaded.getLastPage());
+        assertEquals("Dashboard", loaded.getLastPage());
     }
 
     @Test
     void damagedFileGivesDefaults() throws Exception {
         Path file = dir.resolve("settings.ser");
         Files.write(file, new byte[]{1, 2, 3, 4, 5});
-        assertEquals("Circulation", new SettingsStore(file).load().getLastPage());
+        assertEquals("Dashboard", new SettingsStore(file).load().getLastPage());
     }
 
     @Test
@@ -62,6 +62,6 @@ class SettingsStoreTest {
         try (ObjectOutputStream out = new ObjectOutputStream(Files.newOutputStream(file))) {
             out.writeObject(new ArrayList<>(List.of("not settings")));
         }
-        assertEquals("Circulation", new SettingsStore(file).load().getLastPage());
+        assertEquals("Dashboard", new SettingsStore(file).load().getLastPage());
     }
 }

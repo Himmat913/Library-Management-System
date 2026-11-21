@@ -12,7 +12,7 @@ public class UserSettings implements Serializable {
 
     private double windowWidth = DEFAULT_WIDTH;
     private double windowHeight = DEFAULT_HEIGHT;
-    private String lastPage = "Circulation";
+    private String lastPage = "Dashboard";
     private String lastUsername = "";
     private LocalDateTime savedAt;
 
