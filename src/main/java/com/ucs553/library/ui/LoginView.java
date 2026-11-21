@@ -42,6 +42,7 @@ public class LoginView extends StackPane {
         this.onStaff = onStaff;
         this.onMember = onMember;
         this.lastUsername = lastUsername == null ? "" : lastUsername;
+        getStyleClass().add("login-root");
 
         Label title = new Label(appName);
         title.getStyleClass().add("member-name");
@@ -88,7 +89,7 @@ public class LoginView extends StackPane {
         signIn.setOnAction(e -> signIn());
 
         VBox card = new VBox(12, title, subtitle, tabs, username, password, signIn, error, hint);
-        card.getStyleClass().add("card");
+        card.getStyleClass().addAll("card", "login-card");
         card.setMaxWidth(360);
         card.setMaxHeight(VBox.USE_PREF_SIZE);
         card.setPadding(new Insets(24));

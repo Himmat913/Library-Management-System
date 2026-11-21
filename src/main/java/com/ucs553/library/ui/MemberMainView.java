@@ -1,5 +1,6 @@
 package com.ucs553.library.ui;
 
+import com.ucs553.library.config.UserSettings;
 import com.ucs553.library.exception.LibraryException;
 import com.ucs553.library.model.Member;
 import com.ucs553.library.service.AuthService;
@@ -33,7 +34,7 @@ public class MemberMainView extends BorderPane {
     private final AuthService auth;
     private ToggleButton noticesButton;
 
-    public MemberMainView(String appName, MemberPortal portal, AuthService auth, Runnable onSignOut) {
+    public MemberMainView(String appName, MemberPortal portal, AuthService auth, UserSettings settings, Runnable onSignOut) {
         this.portal = portal;
         this.auth = auth;
         Member member = portal.member();
@@ -74,7 +75,7 @@ public class MemberMainView extends BorderPane {
         Button signOut = new Button("Sign out");
         signOut.setMaxWidth(Double.MAX_VALUE);
         signOut.setOnAction(e -> onSignOut.run());
-        sidebar.getChildren().addAll(spacer, who, password, signOut);
+        sidebar.getChildren().addAll(spacer, who, Theme.toggleButton(settings), password, signOut);
     }
 
     private <V extends Region & Refreshable> ToggleButton addPage(String name, V view) {

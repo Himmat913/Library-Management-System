@@ -10,7 +10,9 @@ import com.ucs553.library.ui.LoginView;
 import com.ucs553.library.ui.MainView;
 import com.ucs553.library.ui.MemberMainView;
 import com.ucs553.library.ui.MemberSignIn;
+import com.ucs553.library.ui.Theme;
 import javafx.application.Application;
+import javafx.scene.Parent;
 import javafx.scene.Scene;
 import javafx.scene.layout.Region;
 import javafx.stage.Stage;
@@ -46,15 +48,20 @@ public class LibraryApp extends Application {
         stage.show();
     }
 
+    private void show(Parent root) {
+        Theme.apply(root, settings.isDarkMode());
+        scene.setRoot(root);
+    }
+
     private void showLogin() {
         Session.clear();
-        scene.setRoot(new LoginView(name, context.auth(), settings.getLastUsername(), this::showMain, this::showMember));
+        show(new LoginView(name, context.auth(), settings.getLastUsername(), this::showMain, this::showMember));
     }
 
     private void showMain(Staff user) {
         Session.set(user);
         settings.setLastUsername(user.getUsername());
-        scene.setRoot(new MainView(name, context.service(), context.auth(), user, settings, this::showLogin));
+        show(new MainView(name, context.service(), context.auth(), user, settings, this::showLogin));
     }
 
     private void showMember(MemberLogin login) {
@@ -65,7 +72,7 @@ public class LibraryApp extends Application {
             return;
         }
         MemberPortal portal = new MemberPortal(context.service(), member);
-        scene.setRoot(new MemberMainView(name, portal, context.auth(), this::showLogin));
+        show(new MemberMainView(name, portal, context.auth(), settings, this::showLogin));
     }
 
     @Override

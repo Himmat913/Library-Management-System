@@ -33,6 +33,16 @@ class SettingsStoreTest {
     }
 
     @Test
+    void darkModeChoiceIsRemembered() {
+        SettingsStore store = new SettingsStore(dir.resolve("settings.ser"));
+        UserSettings settings = new UserSettings();
+        assertFalse(settings.isDarkMode());
+        settings.setDarkMode(true);
+        store.save(settings);
+        assertTrue(store.load().isDarkMode());
+    }
+
+    @Test
     void transientFieldIsNotSaved() {
         SettingsStore store = new SettingsStore(dir.resolve("settings.ser"));
         UserSettings settings = new UserSettings();

@@ -28,7 +28,7 @@ public class MemberNoticesView extends BorderPane implements Refreshable {
         this.onRead = onRead;
         setPadding(new Insets(16));
 
-        list.setPlaceholder(new Label("No notifications yet"));
+        list.setPlaceholder(Pages.empty("No notifications yet", "You will be told here when a reserved item is ready."));
         list.setCellFactory(lv -> new ListCell<>() {
             @Override
             protected void updateItem(Notification note, boolean empty) {

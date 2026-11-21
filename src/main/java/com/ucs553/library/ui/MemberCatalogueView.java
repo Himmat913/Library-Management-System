@@ -74,7 +74,7 @@ public class MemberCatalogueView extends BorderPane implements Refreshable {
         table.getColumns().add(Pages.<Item>text("Type", 100, i -> i.getType().toString()));
         table.getColumns().add(Pages.<Item>text("Availability", 190, this::availability));
         table.setColumnResizePolicy(TableView.CONSTRAINED_RESIZE_POLICY_FLEX_LAST_COLUMN);
-        table.setPlaceholder(new Label("Nothing matches your search"));
+        table.setPlaceholder(Pages.empty("Nothing matches your search", "Try fewer words or another category."));
         table.setRowFactory(tv -> new TableRow<>() {
             @Override
             protected void updateItem(Item item, boolean empty) {

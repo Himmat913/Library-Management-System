@@ -92,7 +92,7 @@ public class MainView extends BorderPane {
         Button signOut = new Button("Sign out");
         signOut.setMaxWidth(Double.MAX_VALUE);
         signOut.setOnAction(e -> onSignOut.run());
-        sidebar.getChildren().addAll(spacer, who, password, signOut);
+        sidebar.getChildren().addAll(spacer, who, Theme.toggleButton(settings), password, signOut);
     }
 
     private void open(String page) {

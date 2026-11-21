@@ -14,6 +14,7 @@ public class UserSettings implements Serializable {
     private double windowHeight = DEFAULT_HEIGHT;
     private String lastPage = "Dashboard";
     private String lastUsername = "";
+    private boolean darkMode;
     private LocalDateTime savedAt;
 
     // only says whether this copy was edited since it was loaded, so it is not worth saving
@@ -48,6 +49,15 @@ public class UserSettings implements Serializable {
 
     public void setLastUsername(String lastUsername) {
         this.lastUsername = lastUsername;
+        changed = true;
+    }
+
+    public boolean isDarkMode() {
+        return darkMode;
+    }
+
+    public void setDarkMode(boolean darkMode) {
+        this.darkMode = darkMode;
         changed = true;
     }
 

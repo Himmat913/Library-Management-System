@@ -1,152 +1,414 @@
+/* One stylesheet for the whole app. Colours live in the -lib-* names below so the dark theme only has to
+   change them once; Theme adds the "dark" style class to the scene root when dark mode is on. */
+
 .root {
+    -lib-bg: #f4f6f8;
+    -lib-surface: #ffffff;
+    -lib-surface-alt: #f8fafc;
+    -lib-border: #e2e8f0;
+    -lib-text: #1f2a44;
+    -lib-muted: #64748b;
+    -lib-accent: #2563eb;
+    -lib-accent-hover: #1d4ed8;
+    -lib-accent-soft: #dbeafe;
+    -lib-sidebar: #1f2a44;
+    -lib-sidebar-hover: #2e3b5e;
+    -lib-sidebar-text: #cbd5e1;
+    -lib-danger: #b91c1c;
+    -lib-danger-soft: #fee2e2;
+    -lib-success: #15803d;
+    -lib-success-soft: #dcfce7;
+    -lib-warn: #b45309;
+    -lib-warn-soft: #fef3c7;
+    -lib-hover: #f1f5f9;
+    -lib-unread: #eff6ff;
+
     -fx-font-family: "Segoe UI", sans-serif;
     -fx-font-size: 14px;
-    -fx-background-color: #f4f6f8;
+    -fx-background-color: -lib-bg;
+    -fx-focus-color: -lib-accent;
+    -fx-faint-focus-color: rgba(37, 99, 235, 0.2);
+    -fx-accent: -lib-accent;
 }
 
+.root.dark {
+    -lib-bg: #0f172a;
+    -lib-surface: #1e293b;
+    -lib-surface-alt: #172033;
+    -lib-border: #334155;
+    -lib-text: #e2e8f0;
+    -lib-muted: #94a3b8;
+    -lib-accent: #3b82f6;
+    -lib-accent-hover: #60a5fa;
+    -lib-accent-soft: #1e3a5f;
+    -lib-sidebar: #0b1220;
+    -lib-sidebar-hover: #17233b;
+    -lib-sidebar-text: #94a3b8;
+    -lib-danger: #f87171;
+    -lib-danger-soft: #4c1d1d;
+    -lib-success: #4ade80;
+    -lib-success-soft: #14532d;
+    -lib-warn: #fbbf24;
+    -lib-warn-soft: #4a3511;
+    -lib-hover: #273449;
+    -lib-unread: #1e3a5f;
+
+    -fx-base: #1e293b;
+    -fx-control-inner-background: #0f172a;
+    -fx-control-inner-background-alt: #131d31;
+    -fx-text-base-color: #e2e8f0;
+    -fx-background: #0f172a;
+    -fx-faint-focus-color: rgba(59, 130, 246, 0.25);
+}
+
+.label {
+    -fx-text-fill: -lib-text;
+}
+
+/* ---- sidebar ---- */
+
 .sidebar {
-    -fx-background-color: #1f2a44;
+    -fx-background-color: -lib-sidebar;
 }
 
 .app-title {
     -fx-text-fill: white;
     -fx-font-size: 17px;
     -fx-font-weight: bold;
-    -fx-padding: 0 0 18 6;
+    -fx-padding: 0 0 14 6;
 }
 
 .nav-button {
     -fx-background-color: transparent;
-    -fx-text-fill: #cbd5e1;
+    -fx-text-fill: -lib-sidebar-text;
     -fx-alignment: center-left;
-    -fx-padding: 10 14 10 14;
+    -fx-padding: 8 14 8 11;
     -fx-background-radius: 6;
+    -fx-border-color: transparent;
+    -fx-border-width: 0 0 0 3;
+    -fx-border-radius: 6;
     -fx-cursor: hand;
 }
 
 .nav-button:hover {
-    -fx-background-color: #2e3b5e;
+    -fx-background-color: -lib-sidebar-hover;
 }
 
 .nav-button:selected {
-    -fx-background-color: #3b82f6;
+    -fx-background-color: -lib-sidebar-hover;
+    -fx-border-color: #60a5fa;
     -fx-text-fill: white;
-}
-
-.status-bar {
-    -fx-background-color: #e2e8f0;
-    -fx-padding: 6 16 6 16;
-    -fx-text-fill: #475569;
-}
-
-.button.primary {
-    -fx-background-color: #3b82f6;
-    -fx-text-fill: white;
-}
-
-.button.primary:hover {
-    -fx-background-color: #2563eb;
-}
-
-.table-row-cell.unavailable .table-cell {
-    -fx-text-fill: #b45309;
-}
-
-.details {
-    -fx-text-fill: #334155;
-}
-
-.table-row-cell.overdue .table-cell {
-    -fx-text-fill: #b91c1c;
-}
-
-.member-name {
-    -fx-font-size: 20px;
     -fx-font-weight: bold;
-    -fx-text-fill: #1f2a44;
 }
 
-.muted {
-    -fx-text-fill: #64748b;
+.sidebar .button {
+    -fx-background-color: transparent;
+    -fx-border-color: #3b4a6b;
+    -fx-text-fill: -lib-sidebar-text;
 }
 
-.section-title {
-    -fx-font-weight: bold;
-    -fx-text-fill: #334155;
-}
-
-.card {
-    -fx-background-color: white;
-    -fx-background-radius: 8;
-    -fx-padding: 12;
-    -fx-border-color: #e2e8f0;
-    -fx-border-radius: 8;
-}
-
-.segment {
-    -fx-background-color: #e2e8f0;
-    -fx-text-fill: #334155;
-    -fx-background-radius: 0;
-}
-
-.segment:selected {
-    -fx-background-color: #1f2a44;
-    -fx-text-fill: white;
+.sidebar .button:hover {
+    -fx-background-color: -lib-sidebar-hover;
 }
 
 .user-label {
-    -fx-text-fill: #cbd5e1;
+    -fx-text-fill: -lib-sidebar-text;
     -fx-padding: 12 4 4 6;
 }
+
+.status-bar {
+    -fx-background-color: -lib-surface;
+    -fx-border-color: -lib-border transparent transparent transparent;
+    -fx-padding: 6 16 6 16;
+}
+
+.status-bar .label {
+    -fx-text-fill: -lib-muted;
+}
+
+/* ---- page headers and text ---- */
 
 .page-header {
     -fx-padding: 0 0 12 0;
 }
 
 .page-title {
-    -fx-font-size: 20px;
+    -fx-font-size: 22px;
     -fx-font-weight: bold;
-    -fx-text-fill: #1f2a44;
+    -fx-text-fill: -lib-text;
 }
 
 .page-subtitle {
-    -fx-text-fill: #64748b;
+    -fx-text-fill: -lib-muted;
 }
 
-.stat-box {
-    -fx-background-color: white;
+.member-name {
+    -fx-font-size: 20px;
+    -fx-font-weight: bold;
+    -fx-text-fill: -lib-text;
+}
+
+.muted,
+.label.muted {
+    -fx-text-fill: -lib-muted;
+}
+
+.section-title {
+    -fx-font-weight: bold;
+    -fx-text-fill: -lib-text;
+}
+
+.details {
+    -fx-text-fill: -lib-muted;
+}
+
+.empty-state {
+    -fx-alignment: center;
+    -fx-padding: 24;
+}
+
+.empty-title {
+    -fx-font-size: 15px;
+    -fx-font-weight: bold;
+    -fx-text-fill: -lib-muted;
+}
+
+.empty-hint {
+    -fx-text-fill: -lib-muted;
+}
+
+/* ---- buttons ---- */
+
+.button {
+    -fx-background-color: -lib-surface;
+    -fx-background-radius: 6;
+    -fx-border-color: -lib-border;
+    -fx-border-radius: 6;
+    -fx-text-fill: -lib-text;
+    -fx-padding: 6 14 6 14;
+    -fx-cursor: hand;
+}
+
+.button:hover {
+    -fx-background-color: -lib-hover;
+}
+
+.button:disabled {
+    -fx-opacity: 0.45;
+}
+
+.button.primary {
+    -fx-background-color: -lib-accent;
+    -fx-border-color: -lib-accent;
+    -fx-text-fill: white;
+    -fx-font-weight: bold;
+}
+
+.button.primary:hover {
+    -fx-background-color: -lib-accent-hover;
+    -fx-border-color: -lib-accent-hover;
+}
+
+.button.danger {
+    -fx-background-color: transparent;
+    -fx-border-color: -lib-danger;
+    -fx-text-fill: -lib-danger;
+}
+
+.button.danger:hover {
+    -fx-background-color: -lib-danger-soft;
+}
+
+/* ---- form fields: Modena draws the focus ring, which the root colours turn blue ---- */
+
+.text-field,
+.password-field {
+    -fx-background-radius: 6;
+    -fx-padding: 7 9 7 9;
+}
+
+.combo-box-base {
+    -fx-background-radius: 6;
+}
+
+/* ---- cards, segments ---- */
+
+.card {
+    -fx-background-color: -lib-surface;
     -fx-background-radius: 8;
-    -fx-border-color: #e2e8f0;
+    -fx-padding: 12;
+    -fx-border-color: -lib-border;
+    -fx-border-radius: 8;
+}
+
+.login-root {
+    -fx-background-color: -lib-bg;
+}
+
+.login-card {
+    -fx-padding: 28;
+    -fx-effect: dropshadow(gaussian, rgba(15, 23, 42, 0.12), 24, 0, 0, 6);
+}
+
+.segment {
+    -fx-background-color: -lib-hover;
+    -fx-text-fill: -lib-text;
+    -fx-background-radius: 0;
+    -fx-padding: 6 14 6 14;
+    -fx-cursor: hand;
+}
+
+.segment:selected {
+    -fx-background-color: -lib-accent;
+    -fx-text-fill: white;
+}
+
+/* ---- tables and lists ---- */
+
+.table-view,
+.list-view {
+    -fx-background-color: -lib-surface;
+    -fx-background-radius: 8;
+    -fx-border-color: -lib-border;
+    -fx-border-radius: 8;
+}
+
+.table-view .column-header-background,
+.table-view .column-header,
+.table-view .filler {
+    -fx-background-color: -lib-surface-alt;
+    -fx-border-color: transparent transparent -lib-border transparent;
+}
+
+.table-view .column-header .label {
+    -fx-text-fill: -lib-muted;
+    -fx-font-weight: bold;
+}
+
+.table-row-cell {
+    -fx-background-color: -lib-surface;
+    -fx-cell-size: 36px;
+    -fx-table-cell-border-color: transparent;
+}
+
+.table-row-cell:odd {
+    -fx-background-color: -lib-surface-alt;
+}
+
+.table-row-cell:hover {
+    -fx-background-color: -lib-hover;
+}
+
+.table-row-cell .table-cell {
+    -fx-text-fill: -lib-text;
+    -fx-alignment: center-left;
+}
+
+.table-row-cell.unavailable .table-cell {
+    -fx-text-fill: -lib-warn;
+}
+
+.table-row-cell.overdue .table-cell {
+    -fx-text-fill: -lib-danger;
+}
+
+.table-row-cell.ready {
+    -fx-background-color: -lib-success-soft;
+}
+
+.table-row-cell:filled:selected {
+    -fx-background-color: -lib-accent-soft;
+}
+
+.table-row-cell:filled:selected .table-cell {
+    -fx-text-fill: -lib-text;
+}
+
+.list-cell {
+    -fx-background-color: -lib-surface;
+    -fx-text-fill: -lib-text;
+    -fx-padding: 8 10 8 10;
+}
+
+.list-cell:odd {
+    -fx-background-color: -lib-surface-alt;
+}
+
+.list-cell:filled:selected {
+    -fx-background-color: -lib-accent-soft;
+    -fx-text-fill: -lib-text;
+}
+
+.list-cell.unread {
+    -fx-font-weight: bold;
+    -fx-background-color: -lib-unread;
+}
+
+/* ---- status chips (Pages.chip) ---- */
+
+.chip {
+    -fx-padding: 2 10 2 10;
+    -fx-background-radius: 10;
+    -fx-font-size: 12px;
+    -fx-font-weight: bold;
+}
+
+.chip-info {
+    -fx-background-color: -lib-accent-soft;
+    -fx-text-fill: -lib-accent;
+}
+
+.chip-success {
+    -fx-background-color: -lib-success-soft;
+    -fx-text-fill: -lib-success;
+}
+
+.chip-danger {
+    -fx-background-color: -lib-danger-soft;
+    -fx-text-fill: -lib-danger;
+}
+
+.chip-warn {
+    -fx-background-color: -lib-warn-soft;
+    -fx-text-fill: -lib-warn;
+}
+
+.chip-muted {
+    -fx-background-color: -lib-hover;
+    -fx-text-fill: -lib-muted;
+}
+
+/* ---- stat boxes (dashboard buttons and the circulation summary) ---- */
+
+.stat-box {
+    -fx-background-color: -lib-surface;
+    -fx-background-radius: 8;
+    -fx-border-color: -lib-border;
     -fx-border-radius: 8;
     -fx-padding: 12 18 12 18;
     -fx-min-width: 150;
     -fx-alignment: center-left;
-    -fx-cursor: hand;
 }
 
-.stat-box:hover {
-    -fx-border-color: #1f2a44;
+.button.stat-box:hover {
+    -fx-border-color: -lib-accent;
+    -fx-background-color: -lib-surface;
+}
+
+.stat-static {
+    -fx-cursor: default;
 }
 
 .stat-number {
     -fx-font-size: 24px;
     -fx-font-weight: bold;
-    -fx-text-fill: #1f2a44;
+    -fx-text-fill: -lib-text;
 }
 
 .stat-caption {
-    -fx-text-fill: #64748b;
+    -fx-text-fill: -lib-muted;
 }
 
 .stat-warn .stat-number {
-    -fx-text-fill: #b91c1c;
-}
-
-.table-row-cell.ready {
-    -fx-background-color: #dcfce7;
-}
-
-.list-cell.unread {
-    -fx-font-weight: bold;
-    -fx-background-color: #eff6ff;
+    -fx-text-fill: -lib-danger;
 }

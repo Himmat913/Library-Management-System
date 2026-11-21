@@ -59,10 +59,11 @@ public class FinesView extends BorderPane implements Refreshable {
         table.getColumns().add(Pages.<FineDetail>text("Item", 260, f -> f.itemTitle()));
         table.getColumns().add(Pages.<FineDetail>text("Amount", 90, f -> Pages.rupees(f.fine().getAmount())));
         table.getColumns().add(Pages.<FineDetail>text("Charged on", 110, f -> Pages.DATE.format(f.fine().getCreatedOn())));
-        table.getColumns().add(Pages.<FineDetail>text("Paid on", 110, f ->
-                f.fine().isPaid() ? Pages.DATE.format(f.fine().getPaidOn()) : "Unpaid"));
+        table.getColumns().add(Pages.<FineDetail>chip("Status", 140,
+                f -> f.fine().isPaid() ? "Paid " + Pages.DATE.format(f.fine().getPaidOn()) : "Unpaid",
+                f -> f.fine().isPaid() ? "success" : "danger"));
         table.setColumnResizePolicy(TableView.CONSTRAINED_RESIZE_POLICY_FLEX_LAST_COLUMN);
-        table.setPlaceholder(new Label("No fines to show"));
+        table.setPlaceholder(Pages.empty("No fines to show", "Fines appear when an item comes back late."));
         table.setRowFactory(tv -> new TableRow<>() {
             @Override
             protected void updateItem(FineDetail row, boolean empty) {

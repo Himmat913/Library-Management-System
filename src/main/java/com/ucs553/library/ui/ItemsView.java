@@ -26,6 +26,7 @@ import javafx.scene.layout.BorderPane;
 import javafx.scene.layout.HBox;
 import javafx.scene.layout.Priority;
 import javafx.scene.layout.Region;
+import javafx.scene.layout.VBox;
 import javafx.stage.Window;
 
 import java.util.List;
@@ -69,6 +70,7 @@ public class ItemsView extends BorderPane implements Refreshable {
         Button edit = new Button("Edit");
         Button delete = new Button("Delete");
         add.getStyleClass().add("primary");
+        delete.getStyleClass().add("danger");
         edit.disableProperty().bind(table.getSelectionModel().selectedItemProperty().isNull());
         delete.disableProperty().bind(table.getSelectionModel().selectedItemProperty().isNull());
         delete.setVisible(Session.isAdmin());
@@ -81,7 +83,7 @@ public class ItemsView extends BorderPane implements Refreshable {
         HBox.setHgrow(spacer, Priority.ALWAYS);
         HBox toolbar = new HBox(8, search, categoryFilter, clear, spacer, reserve, add, edit, delete);
         toolbar.setPadding(new Insets(0, 0, 12, 0));
-        setTop(toolbar);
+        setTop(new VBox(Pages.header("Items", "Everything the library lends: books, magazines and digital resources."), toolbar));
 
         buildTable();
         setCenter(table);
@@ -129,10 +131,9 @@ public class ItemsView extends BorderPane implements Refreshable {
         year.setCellValueFactory(c -> new ReadOnlyObjectWrapper<Integer>(c.getValue().getYear()));
         year.setPrefWidth(80);
 
-        TableColumn<Item, String> copies = new TableColumn<>("Available");
-        copies.setCellValueFactory(c -> new ReadOnlyStringWrapper(
-                c.getValue().getAvailableCopies() + " / " + c.getValue().getTotalCopies()));
-        copies.setPrefWidth(100);
+        TableColumn<Item, String> copies = Pages.<Item>chip("Available", 100,
+                i -> i.getAvailableCopies() + " / " + i.getTotalCopies(),
+                i -> i.isAvailable() ? "success" : "danger");
 
         table.getColumns().add(type);
         table.getColumns().add(title);
@@ -141,7 +142,7 @@ public class ItemsView extends BorderPane implements Refreshable {
         table.getColumns().add(year);
         table.getColumns().add(copies);
         table.setColumnResizePolicy(TableView.CONSTRAINED_RESIZE_POLICY_FLEX_LAST_COLUMN);
-        table.setPlaceholder(new Label("No items to show"));
+        table.setPlaceholder(Pages.empty("No items match", "Try a different search or category."));
 
         SortedList<Item> sorted = new SortedList<>(filtered);
         sorted.comparatorProperty().bind(table.comparatorProperty());

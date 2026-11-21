@@ -87,7 +87,7 @@ public class CirculationView extends BorderPane implements Refreshable {
     private final TableView<LoanRow> table = new TableView<>();
     private final ComboBox<Member> memberBox = new ComboBox<>();
     private final ComboBox<Item> itemBox = new ComboBox<>();
-    private final Label summary = new Label();
+    private final HBox stats = new HBox(12);
     private final CheckBox finesOnly = new CheckBox("With fines only");
     private final LinkedList<String> recent = new LinkedList<>();
     private final ListView<String> activity = new ListView<>();
@@ -98,7 +98,8 @@ public class CirculationView extends BorderPane implements Refreshable {
         this.status = status;
         setPadding(new Insets(16));
 
-        setTop(new VBox(12, buildIssuePanel(), buildFilterBar()));
+        setTop(new VBox(12, Pages.header("Circulation", "Issue, renew and return loans."),
+                buildIssuePanel(), stats, buildFilterBar()));
         buildTable();
         setCenter(table);
         BorderPane.setMargin(table, new Insets(12, 0, 0, 0));
@@ -166,11 +167,10 @@ public class CirculationView extends BorderPane implements Refreshable {
         renew.disableProperty().bind(giveBack.disableProperty());
         renew.setOnAction(e -> renewSelected());
 
-        summary.getStyleClass().add("muted");
         Region spacer = new Region();
         HBox.setHgrow(spacer, Priority.ALWAYS);
         finesOnly.selectedProperty().addListener((obs, was, now) -> applyFilter());
-        HBox bar = new HBox(16, segments, finesOnly, summary, spacer, renew, giveBack);
+        HBox bar = new HBox(16, segments, finesOnly, spacer, renew, giveBack);
         bar.setAlignment(Pos.CENTER_LEFT);
         return bar;
     }
@@ -229,12 +229,15 @@ public class CirculationView extends BorderPane implements Refreshable {
         TableColumn<LoanRow, LocalDate> due = dateColumn("Due", r -> r.loan().getDueOn());
         TableColumn<LoanRow, LocalDate> returned = dateColumn("Returned", r -> r.loan().getReturnedOn());
 
-        TableColumn<LoanRow, String> state = new TableColumn<>("Status");
-        state.setCellValueFactory(c -> new ReadOnlyStringWrapper(switch (c.getValue().status()) {
+        TableColumn<LoanRow, String> state = Pages.<LoanRow>chip("Status", 90, r -> switch (r.status()) {
             case ACTIVE -> "On loan";
             case OVERDUE -> "Overdue";
             case RETURNED -> "Returned";
-        }));
+        }, r -> switch (r.status()) {
+            case ACTIVE -> "info";
+            case OVERDUE -> "danger";
+            case RETURNED -> "muted";
+        });
 
         TableColumn<LoanRow, String> fine = new TableColumn<>("Fine");
         fine.setCellValueFactory(c -> new ReadOnlyStringWrapper(
@@ -248,7 +251,7 @@ public class CirculationView extends BorderPane implements Refreshable {
         table.getColumns().add(state);
         table.getColumns().add(fine);
         table.setColumnResizePolicy(TableView.CONSTRAINED_RESIZE_POLICY_FLEX_LAST_COLUMN);
-        table.setPlaceholder(new Label("No loans to show"));
+        table.setPlaceholder(Pages.empty("No loans to show", "Try another filter, or issue a loan above."));
 
         SortedList<LoanRow> sorted = new SortedList<>(filtered);
         sorted.comparatorProperty().bind(table.comparatorProperty());
@@ -315,7 +318,10 @@ public class CirculationView extends BorderPane implements Refreshable {
         long overdue = rows.stream().filter(r -> r.status() == LoanStatus.OVERDUE).count();
         BigDecimal fines = rows.stream().filter(r -> r.status() == LoanStatus.OVERDUE)
                 .map(LoanRow::fine).reduce(BigDecimal.ZERO, BigDecimal::add);
-        summary.setText(active + " active, " + overdue + " overdue, fines building up: ₹" + fines.setScale(2));
+        stats.getChildren().setAll(
+                Pages.stat(String.valueOf(active), "On loan", false),
+                Pages.stat(String.valueOf(overdue), "Overdue", overdue > 0),
+                Pages.stat(Pages.rupees(fines), "Fines building up", fines.signum() > 0));
     }
 
     private void updateStatus() {

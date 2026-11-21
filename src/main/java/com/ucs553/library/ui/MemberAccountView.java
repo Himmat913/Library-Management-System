@@ -70,16 +70,20 @@ public class MemberAccountView extends BorderPane implements Refreshable {
         loanTable.getColumns().add(Pages.<LoanDetail>text("Item", 280, LoanDetail::itemTitle));
         loanTable.getColumns().add(Pages.<LoanDetail>text("Issued", 110, d -> Pages.DATE.format(d.loan().getIssuedOn())));
         loanTable.getColumns().add(Pages.<LoanDetail>text("Due", 110, d -> Pages.DATE.format(d.loan().getDueOn())));
-        loanTable.getColumns().add(Pages.<LoanDetail>text("Status", 100, d -> switch (d.status()) {
+        loanTable.getColumns().add(Pages.<LoanDetail>chip("Status", 100, d -> switch (d.status()) {
             case ACTIVE -> "On loan";
             case OVERDUE -> "Overdue";
             case RETURNED -> "Returned";
+        }, d -> switch (d.status()) {
+            case ACTIVE -> "info";
+            case OVERDUE -> "danger";
+            case RETURNED -> "muted";
         }));
         loanTable.getColumns().add(Pages.<LoanDetail>text("Renewals", 80, d -> String.valueOf(d.loan().getRenewCount())));
         loanTable.getColumns().add(Pages.<LoanDetail>text("Fine so far", 100, d ->
                 d.fine().signum() > 0 ? Pages.rupees(d.fine()) : "-"));
         loanTable.setColumnResizePolicy(TableView.CONSTRAINED_RESIZE_POLICY_FLEX_LAST_COLUMN);
-        loanTable.setPlaceholder(new Label("You have nothing on loan"));
+        loanTable.setPlaceholder(Pages.empty("Nothing on loan", "Borrow something at the desk and it will show up here."));
         loanTable.setRowFactory(tv -> new TableRow<>() {
             @Override
             protected void updateItem(LoanDetail row, boolean empty) {
@@ -107,9 +111,14 @@ public class MemberAccountView extends BorderPane implements Refreshable {
     private VBox buildReservations() {
         reservationTable.getColumns().add(Pages.<ReservationDetail>text("Item", 280, ReservationDetail::itemTitle));
         reservationTable.getColumns().add(Pages.<ReservationDetail>text("Reserved on", 110, d -> Pages.DATE.format(d.reservation().getReservedOn())));
-        reservationTable.getColumns().add(Pages.<ReservationDetail>text("Status", 240, this::describe));
+        reservationTable.getColumns().add(Pages.<ReservationDetail>chip("Status", 260, this::describe, d -> switch (d.reservation().getStatus()) {
+            case READY -> "success";
+            case WAITING -> "warn";
+            case FULFILLED -> "info";
+            default -> "muted";
+        }));
         reservationTable.setColumnResizePolicy(TableView.CONSTRAINED_RESIZE_POLICY_FLEX_LAST_COLUMN);
-        reservationTable.setPlaceholder(new Label("You have no reservations"));
+        reservationTable.setPlaceholder(Pages.empty("No reservations", "Reserve an item from the catalogue when every copy is out."));
         reservationTable.setRowFactory(tv -> new TableRow<>() {
             @Override
             protected void updateItem(ReservationDetail row, boolean empty) {
@@ -123,6 +132,7 @@ public class MemberAccountView extends BorderPane implements Refreshable {
         reservationTable.setItems(reservations);
 
         Button cancel = new Button("Cancel reservation");
+        cancel.getStyleClass().add("danger");
         cancel.disableProperty().bind(Bindings.createBooleanBinding(() -> {
             ReservationDetail row = reservationTable.getSelectionModel().getSelectedItem();
             return row == null || !row.reservation().getStatus().isOpen();
@@ -138,10 +148,11 @@ public class MemberAccountView extends BorderPane implements Refreshable {
         fineTable.getColumns().add(Pages.<FineDetail>text("Item", 280, FineDetail::itemTitle));
         fineTable.getColumns().add(Pages.<FineDetail>text("Amount", 90, d -> Pages.rupees(d.fine().getAmount())));
         fineTable.getColumns().add(Pages.<FineDetail>text("Charged on", 110, d -> Pages.DATE.format(d.fine().getCreatedOn())));
-        fineTable.getColumns().add(Pages.<FineDetail>text("Paid on", 110, d ->
-                d.fine().isPaid() ? Pages.DATE.format(d.fine().getPaidOn()) : "Unpaid"));
+        fineTable.getColumns().add(Pages.<FineDetail>chip("Status", 140,
+                d -> d.fine().isPaid() ? "Paid " + Pages.DATE.format(d.fine().getPaidOn()) : "Unpaid",
+                d -> d.fine().isPaid() ? "success" : "danger"));
         fineTable.setColumnResizePolicy(TableView.CONSTRAINED_RESIZE_POLICY_FLEX_LAST_COLUMN);
-        fineTable.setPlaceholder(new Label("You have no fines"));
+        fineTable.setPlaceholder(Pages.empty("No fines", "Nothing to pay."));
         fineTable.setItems(fines);
         fineTotal.getStyleClass().add("section-title");
         Label note = new Label("Fines are paid at the library desk.");

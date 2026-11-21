@@ -73,7 +73,7 @@ public class AccountsView extends BorderPane implements Refreshable {
         table.getColumns().add(Pages.<Member>text("Sign-in email", 260, Member::getEmail));
         table.getColumns().add(Pages.<Member>text("Login", 120, m -> withAccount.contains(m.getId()) ? "Has a login" : "No login yet"));
         table.setColumnResizePolicy(TableView.CONSTRAINED_RESIZE_POLICY_FLEX_LAST_COLUMN);
-        table.setPlaceholder(new Label("No members to show"));
+        table.setPlaceholder(Pages.empty("No members found", "Try a different search."));
         SortedList<Member> sorted = new SortedList<>(filtered);
         sorted.comparatorProperty().bind(table.comparatorProperty());
         table.setItems(sorted);

@@ -72,6 +72,7 @@ public class MembersView extends BorderPane implements Refreshable {
         Button edit = new Button("Edit");
         Button delete = new Button("Delete");
         add.getStyleClass().add("primary");
+        delete.getStyleClass().add("danger");
         edit.disableProperty().bind(list.getSelectionModel().selectedItemProperty().isNull());
         delete.disableProperty().bind(list.getSelectionModel().selectedItemProperty().isNull());
         delete.setVisible(Session.isAdmin());
@@ -84,7 +85,7 @@ public class MembersView extends BorderPane implements Refreshable {
         HBox.setHgrow(spacer, Priority.ALWAYS);
         HBox toolbar = new HBox(8, search, spacer, add, edit, delete);
         toolbar.setPadding(new Insets(0, 0, 12, 0));
-        setTop(toolbar);
+        setTop(new VBox(Pages.header("Members", "Everyone who can borrow, and what they have out right now."), toolbar));
 
         buildList();
         SplitPane split = new SplitPane(list, buildDetail());
@@ -103,7 +104,7 @@ public class MembersView extends BorderPane implements Refreshable {
 
     private void buildList() {
         list.setItems(new SortedList<>(filtered, Comparator.naturalOrder()));
-        list.setPlaceholder(new Label("No members to show"));
+        list.setPlaceholder(Pages.empty("No members found", "Try a different search."));
         list.setCellFactory(lv -> new ListCell<>() {
             @Override
             protected void updateItem(Member member, boolean empty) {
@@ -144,7 +145,7 @@ public class MembersView extends BorderPane implements Refreshable {
         table.getColumns().add(state);
         table.getColumns().add(fine);
         table.setColumnResizePolicy(TableView.CONSTRAINED_RESIZE_POLICY_FLEX_LAST_COLUMN);
-        table.setPlaceholder(new Label("No active loans"));
+        table.setPlaceholder(Pages.empty("No active loans", "Nothing is out with this member."));
         table.setRowFactory(tv -> new TableRow<>() {
             @Override
             protected void updateItem(LoanRow row, boolean empty) {

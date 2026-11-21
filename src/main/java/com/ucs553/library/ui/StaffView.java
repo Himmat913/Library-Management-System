@@ -18,6 +18,7 @@ import javafx.scene.layout.BorderPane;
 import javafx.scene.layout.HBox;
 import javafx.scene.layout.Priority;
 import javafx.scene.layout.Region;
+import javafx.scene.layout.VBox;
 import javafx.stage.Window;
 
 import java.util.logging.Level;
@@ -40,6 +41,7 @@ public class StaffView extends BorderPane implements Refreshable {
         Button add = new Button("Add staff");
         add.getStyleClass().add("primary");
         Button delete = new Button("Delete");
+        delete.getStyleClass().add("danger");
         delete.disableProperty().bind(table.getSelectionModel().selectedItemProperty().isNull());
         add.setOnAction(e -> addStaff());
         delete.setOnAction(e -> deleteSelected());
@@ -48,7 +50,7 @@ public class StaffView extends BorderPane implements Refreshable {
         HBox.setHgrow(spacer, Priority.ALWAYS);
         HBox toolbar = new HBox(8, spacer, add, delete);
         toolbar.setPadding(new Insets(0, 0, 12, 0));
-        setTop(toolbar);
+        setTop(new VBox(Pages.header("Staff", "People who can sign in to run the library desk."), toolbar));
 
         TableColumn<Staff, String> name = new TableColumn<>("Name");
         name.setCellValueFactory(c -> new ReadOnlyStringWrapper(c.getValue().getName()));

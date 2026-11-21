@@ -62,6 +62,7 @@ public class ReservationsView extends BorderPane implements Refreshable {
             return row == null || row.reservation().getStatus() != ReservationStatus.READY;
         }, table.getSelectionModel().selectedItemProperty()));
         Button cancel = new Button("Cancel reservation");
+        cancel.getStyleClass().add("danger");
         cancel.disableProperty().bind(table.getSelectionModel().selectedItemProperty().isNull());
         Button expire = new Button("Release lapsed holds");
         handOver.setOnAction(e -> handOverSelected());
@@ -97,13 +98,14 @@ public class ReservationsView extends BorderPane implements Refreshable {
     private void buildTable() {
         table.getColumns().add(Pages.<ReservationDetail>text("Item", 260, r -> r.itemTitle()));
         table.getColumns().add(Pages.<ReservationDetail>text("Member", 170, r -> r.memberName()));
-        table.getColumns().add(Pages.<ReservationDetail>text("Status", 150, r ->
-                r.reservation().getStatus() == ReservationStatus.READY ? "Ready for pickup" : "Waiting, number " + r.position()));
+        table.getColumns().add(Pages.<ReservationDetail>chip("Status", 170, r ->
+                r.reservation().getStatus() == ReservationStatus.READY ? "Ready for pickup" : "Waiting, number " + r.position(),
+                r -> r.reservation().getStatus() == ReservationStatus.READY ? "success" : "warn"));
         table.getColumns().add(Pages.<ReservationDetail>text("Reserved on", 110, r -> Pages.DATE.format(r.reservation().getReservedOn())));
         table.getColumns().add(Pages.<ReservationDetail>text("Held until", 110, r ->
                 r.reservation().getHoldUntil() == null ? "-" : Pages.DATE.format(r.reservation().getHoldUntil())));
         table.setColumnResizePolicy(TableView.CONSTRAINED_RESIZE_POLICY_FLEX_LAST_COLUMN);
-        table.setPlaceholder(new Label("Nobody is waiting for anything right now"));
+        table.setPlaceholder(Pages.empty("Nobody is waiting", "Reservations appear here when every copy of an item is out."));
         table.setItems(filtered);
         table.setRowFactory(tv -> new TableRow<>() {
             @Override

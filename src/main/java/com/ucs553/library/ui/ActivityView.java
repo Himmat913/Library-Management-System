@@ -75,7 +75,7 @@ public class ActivityView extends BorderPane implements Refreshable {
         table.getColumns().add(Pages.<AuditEntry>text("Action", 150, e -> e.getAction().toString()));
         table.getColumns().add(Pages.<AuditEntry>text("Details", 420, AuditEntry::getDetails));
         table.setColumnResizePolicy(TableView.CONSTRAINED_RESIZE_POLICY_FLEX_LAST_COLUMN);
-        table.setPlaceholder(new Label("Nothing has been recorded yet"));
+        table.setPlaceholder(Pages.empty("Nothing recorded yet", "Issues, returns and fines will be listed here."));
         table.setItems(filtered);
 
         setTop(new VBox(Pages.header("Activity log",
